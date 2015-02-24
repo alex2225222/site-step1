@@ -67,41 +67,39 @@ session_start();
                   }
                 }
                 else {
-                  $pager_limit = 7;
+                  $pager_limit = 5;
                   if (isset($_GET['page']) && is_numeric($_GET['page'])):
                     $page = $_GET['page'];
-                    $id_max = $page * $pager_limit + 1;
-                    $id_min = $id_max - $pager_limit;
-                    $page_print[1] = $page == 1 ? 1 : "<a href='index.php?page=$p'>$p</a>";
                   else:
                     $page = 1;
-                    $id_max = $pager_limit + 1;
-                    $id_min = 0;
-                    $page_print[1] = "1";
                   endif;
-
-
-                  $i = 0;
-                  $sql = "SELECT * FROM article";
+                  $id_min = ($page - 1) * $pager_limit;
+                  $sql = "SELECT SQL_CALC_FOUND_ROWS * FROM article WHERE id > $id_min LIMIT $pager_limit";
                   foreach ($dbh->query($sql) as $row) {
-                    $i++;
-                    if ($i < $id_max && $i >= $id_min) {
-                      $created = date('d.m.Y', $row['created']);
-                      $body = strlen($row['body']) < 6 ? $row['body'] : substr($row['body'], 0, 6) . '...';
-                      print("<div class='block-teaser'><h1><a href='index.php?id={$row['id']}'>{$row['title']}</a></h1>"
-                          . "<div class='autor'>{$row['user']}</div>"
-                          . "<div class='date'>$created</div>"
-                          . "<div class='contetnt-text'>$body</div>"
-                          . "<div class='more'><a href='index.php?id={$row['id']}'>Read More</a></div></div>");
-                    }
-                    else {
-                      $p = round($i / $pager_limit) + 1;
-                      $page_print[$p] = $p == $page ? $p : "<a href='index.php?page=$p'>$p</a>";
+
+                    $created = date('d.m.Y', $row['created']);
+                    $body = strlen($row['body']) < 6 ? $row['body'] : substr($row['body'], 0, 6) . '...';
+                    print("<div class='block-teaser'><h1><a href='index.php?id={$row['id']}'>{$row['title']}</a></h1>"
+                        . "<div class='autor'>{$row['user']}</div>"
+                        . "<div class='date'>$created</div>"
+                        . "<div class='contetnt-text'>$body</div>"
+                        . "<div class='more'><a href='index.php?id={$row['id']}'>Read More</a></div></div>");
+                  }
+                  $sql = "SELECT FOUND_ROWS()";
+                  // $rrr = $dbh->query($sql);
+                  foreach ($dbh->query($sql) as $row) {
+                    $count_article = $row[0];
+                  }
+                  $page_all = round(($count_article + $id_min) / $pager_limit);
+                  //echo "page_all - $page_all, count_article - $count_article,  id_min - $id_min <br/>";
+                  if ($page_all > 1) {
+                    echo '<br/>';
+                    for ($x = 0; $x++ < $page_all;) {
+                      if ($x == $page) : echo $x . ' ';
+                      else: echo "<a href='index.php?page=$x'>$x</a> ";
+                      endif;
                     }
                   }
-                  if (count($page_print) > 1):
-                    echo '<br/>' . implode(' ', $page_print);
-                  endif;
                 }
                 $dbh = null;
                 ?>  
