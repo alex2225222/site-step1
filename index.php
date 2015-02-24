@@ -66,6 +66,15 @@ session_start();
                     echo 'edit_id error';
                   }
                 }
+                elseif ($_GET['user']) {
+                  if (is_numeric($_GET['edit'])) {
+                    $id = $_GET['edit'];
+                    include 'user.php';
+                  }
+                  else {
+                    echo 'edit_id error';
+                  }
+                }
                 else {
                   $pager_limit = 5;
                   if (isset($_GET['page']) && is_numeric($_GET['page'])):
@@ -76,7 +85,6 @@ session_start();
                   $id_min = ($page - 1) * $pager_limit;
                   $sql = "SELECT SQL_CALC_FOUND_ROWS * FROM article WHERE id > $id_min LIMIT $pager_limit";
                   foreach ($dbh->query($sql) as $row) {
-
                     $created = date('d.m.Y', $row['created']);
                     $body = strlen($row['body']) < 6 ? $row['body'] : substr($row['body'], 0, 6) . '...';
                     print("<div class='block-teaser'><h1><a href='index.php?id={$row['id']}'>{$row['title']}</a></h1>"
@@ -87,7 +95,6 @@ session_start();
                   }
                   $sql = "SELECT FOUND_ROWS()";
                   $count_article = $dbh->query($sql)->fetchColumn();
-                  
                   $page_all = round(($count_article + $id_min) / $pager_limit);
                   
                   //echo "page_all - $page_all, count_article - $count_article,  id_min - $id_min <br/>";
