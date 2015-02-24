@@ -3,7 +3,7 @@
     font-size: 16px;
     font-family: "Century Gothic","Lucida Grande",Helvetica,Arial,sans serif;
 }
- 
+
 body {
     background: #ECF8E0;
 }
@@ -48,4 +48,18 @@ body {
 #content{
     margin-left: 210px;
     background: #F3F781;
+}
+
+.autor {
+    float: left;
+    font-size: 10px;
+    font-style: italic;
+    color:  #81DAF5;
+}
+
+.date{
+    margin-left: 40px;
+    font-size: 10px;
+    font-style: italic;
+    color:  #81DAF5;
 }
