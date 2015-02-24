@@ -14,7 +14,8 @@ function access_user($uid = null) {
     }
   }
   include 'config.php';
-  $sql = "SELECT rid FROM article WHERE uid='$uid'";
+
+  $sql = "SELECT rid FROM users_roles WHERE uid='$uid'";
   $rid = array();
   foreach ($dbh->query($sql) as $row) {
     $rid[] = $row['rid'];
@@ -36,7 +37,7 @@ function user_form($uid = null) {
       $user = $dbh->query($sql)->fetch();
       ?>
       <form name="edit-user" action="user.php" method="post">
-          <div class="avatar"><img id="ava" src="img/avatar.jpeg" width="130px" height="110px" />
+          <div class="avatar"><img id="ava" src="img/<?php echo $user['avatar']  ? : 'avatar.jpeg'; ?>" width="130px" height="110px" />
               <p align="center"><label for="avatar_label" id="photo"><?php echo 'add photo'; ?></label>
               </p>
               <input name="fupload" id="fupload" class="fld" type="FILE"></div>
@@ -103,3 +104,5 @@ function sec_text($text) {
   $text = trim($text);
   return $text;
 }
+
+
