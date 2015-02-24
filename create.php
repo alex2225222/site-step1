@@ -43,7 +43,7 @@ if (!isset($_POST['title'])){
   }
   $created = time();
   $user = $_SESSION['user']['login'];
-  $dbh = new PDO('mysql:host=localhost;dbname=step1', 'root', '2');
+  include 'config.php';
   $sth = $dbh->prepare('INSERT INTO article SET title=?,body=?,user=?,created=?');
   $sth->execute(array($title,$body,$user,$created));
   $row = $sth->fetchAll();
