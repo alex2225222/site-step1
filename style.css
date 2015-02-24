@@ -1,0 +1,51 @@
+* {
+    color: #0B3861;
+    font-size: 16px;
+    font-family: "Century Gothic","Lucida Grande",Helvetica,Arial,sans serif;
+}
+ 
+body {
+    background: #ECF8E0;
+}
+
+#site {
+    width: 70%;
+    position: absolute;
+    left: 15%;
+    background: #CEE3F6;
+}
+
+#top {
+    width: 100%;
+    height: 100px;
+    background: #FFF;
+}
+
+#top img {
+    width: 150px;
+    height: 100px;
+    float: left;
+}
+
+#site-name{
+    margin-left: 250px;
+    padding-top: 20px;
+    font-size: 40px;
+}
+
+#left {
+    width: 180px;
+    float: left;
+    text-align: center;
+    background: #81DAF5;
+    padding: 5px;
+}
+
+#left input{
+    width: 145px;
+}
+
+#content{
+    margin-left: 210px;
+    background: #F3F781;
+}
