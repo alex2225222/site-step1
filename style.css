@@ -63,3 +63,13 @@ body {
     font-style: italic;
     color:  #81DAF5;
 }
+
+.more{
+    margin-left: 100px;
+}
+
+
+.more a{
+    font-size: 10px;
+    color: #CD214F;
+}
