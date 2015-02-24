@@ -83,7 +83,7 @@ session_start();
                         . "<div class='autor'>{$row['user']}</div>"
                         . "<div class='date'>$created</div>"
                         . "<div class='contetnt-text'>$body</div>"
-                        . "<div class='more'><a href='index.php?id={$row['id']}'>Read More</a></div></div>");
+                        . "<div class='more'><a href='index.php?id={$row['id']}'>Read More</a></div></div><hr/>");
                   }
                   $sql = "SELECT FOUND_ROWS()";
                   $count_article = $dbh->query($sql)->fetchColumn();
