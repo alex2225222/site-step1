@@ -1,7 +1,7 @@
 <?php
 session_start();
 if (!isset($_SESSION['user'])) :
-  header ("Location: index.php");
+  header("Location: index.php");
   exit();
 endif;
 if (!isset($_POST['title'])) {
@@ -51,12 +51,12 @@ else {
   }
   $created = time();
   $user = $_SESSION['user']['login'];
-  $dbh = new PDO('mysql:host=localhost;dbname=step1', 'root', '2');
+  include 'config.php';
   $sth = $dbh->prepare('UPDATE article SET title=?,body=?,user=?,created=? WHERE id=?');
-  $sth->execute(array($title,$body,$user,$created,$id));
+  $sth->execute(array($title, $body, $user, $created, $id));
   $row = $sth->fetchAll();
-  
-  
+
+
 //  $sql = "UPDATE article SET title='$title',body='$body',user='$user',created='$created' WHERE id='$id'";
 //  echo $sql;
 //  $dbh->query($sql);

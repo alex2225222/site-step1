@@ -21,6 +21,7 @@ session_start();
                           Login<input name="login" type="text" />
                           Password<input name="pass" type="password" />
                           <input value="signin" name="submit" type="submit" />
+                          <a href='index.php?user=0'>Registration</a>
                       </form>
                     <?php else : ?>
                       <div id="login-yes">You are already<br/>logged in</div>
@@ -33,7 +34,7 @@ session_start();
             </div>
             <div id="content">
                 <?php
-                $dbh = new PDO('mysql:host=localhost;dbname=step1', 'root', '2');
+                include 'config.php';
                 //print_r($_GET);
                 if (isset($_GET['id'])) {
                   if (is_numeric($_GET['id'])) {
@@ -66,13 +67,13 @@ session_start();
                     echo 'edit_id error';
                   }
                 }
-                elseif ($_GET['user']) {
-                  if (is_numeric($_GET['edit'])) {
-                    $id = $_GET['edit'];
+                elseif ($_GET['user'] || $_GET['user']==0) {
+                  if (is_numeric($_GET['user'])) {
+                    $uid = $_GET['user'];
                     include 'user.php';
                   }
                   else {
-                    echo 'edit_id error';
+                    echo 'user_id error';
                   }
                 }
                 else {
