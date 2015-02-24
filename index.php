@@ -86,11 +86,10 @@ session_start();
                         . "<div class='more'><a href='index.php?id={$row['id']}'>Read More</a></div></div>");
                   }
                   $sql = "SELECT FOUND_ROWS()";
-                  // $rrr = $dbh->query($sql);
-                  foreach ($dbh->query($sql) as $row) {
-                    $count_article = $row[0];
-                  }
+                  $count_article = $dbh->query($sql)->fetchColumn();
+                  
                   $page_all = round(($count_article + $id_min) / $pager_limit);
+                  
                   //echo "page_all - $page_all, count_article - $count_article,  id_min - $id_min <br/>";
                   if ($page_all > 1) {
                     echo '<br/>';
