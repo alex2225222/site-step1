@@ -6,7 +6,7 @@ if (!((isset($uid) && is_numeric($uid)) || isset($_POST['submit']))) :
   exit();
 endif;
 
-include 'user_func.php';
+include_once 'user_func.php';
 
 if (!isset($_POST['login'])) {
 
@@ -14,11 +14,13 @@ if (!isset($_POST['login'])) {
     user_form();
   }
   else {
-    echo 'hi';
     $op = isset($_GET['op']) ? $_GET['op'] : '';
     switch ($op) {
       case 'edit':
         user_form($uid);
+        break;
+      case 'list':
+        user_list();
         break;
       case 'delete':
         header("Location: index.php");
@@ -32,12 +34,12 @@ if (!isset($_POST['login'])) {
 }
 else {
   $access = isset($_POST['access']) ? $_POST['access'] : '';
-  if (empty($access) || $access != $_SESSION['$access_form']) {
+  if (empty($access) || $access != $_SESSION['access_form']) {
     header("Location: index.php");
     exit;
   }
   else {
-    unset($_SESSION['$access_form']);
+    unset($_SESSION['access_form']);
   }
   include 'config.php';
   if ((!isset($_SESSION['user']) || in_array(3, $_SESSION['user']['rid'])) && isset($_POST['submit']) && $_POST['submit'] == 'add') {
@@ -157,7 +159,7 @@ else {
     }
 //        print_r($_FILES);
 //    exit;     
-    $array_add_field = array('name', 'lastname', 'info', 'info_ua');
+    $array_add_field = array('name', 'lastname', 'info_en', 'info_ua');
     foreach ($array_add_field as $value) {
       if ($_POST[$value]) {
         $name = var_user($value, $_POST[$value]);

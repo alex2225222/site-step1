@@ -21,9 +21,9 @@ if (!isset($_POST['id']) && isset($_GET['id']) && is_numeric($_GET['id'])){
       header ("Location: index.php");
       exit();      
     endif;
-    $dbh = new PDO('mysql:host=localhost;dbname=step1', 'root', '2');
+    include 'config.php';
     $sql = "DELETE FROM article WHERE id = '$id'";
-    echo $sql;
+    //echo $sql;
     $count = $dbh->exec($sql);
     //if (count($count)) 
     $dbh = null;

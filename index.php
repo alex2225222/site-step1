@@ -31,14 +31,15 @@ include 'user_func.php';
                       <a href='index.php?user=<?php echo $_SESSION['user']['uid']; ?>&op=edit'><?php echo t('Edit profile'); ?></a>
                       <?php
                       if (in_array(4, $_SESSION['user']['rid'])) {
-                        echo "<h1>".t('You profile is blocked')."</h1>";
+                        echo "<h1>" . t('You profile is blocked') . "</h1>";
                       }
                       else {
                         if (in_array(2, $_SESSION['user']['rid']) || in_array(3, $_SESSION['user']['rid'])) {
-                          echo "<br/><a href='index.php?id=create'>".t('Create content')."</a>";
+                          echo "<br/><a href='index.php?id=create'>" . t('Create content') . "</a>";
+                          echo "<br/><a href='index.php?tr=edit'>" . t('Edit translate') . "</a>";
                         }
                         if (in_array(3, $_SESSION['user']['rid']))
-                          echo "<br/><a href='index.php?user=0'>".t('Add of new user')."</a>";
+                          echo "<br/><a href='index.php?user=0'>" . t('Add of new user') . "</a>";
                       }
                     endif;
                     ?>
@@ -48,7 +49,7 @@ include 'user_func.php';
                         <input type="image" src="img/ua.png" name="ua" value="ua">
                         <input type="image" src="img/en.png" name="en" value="en">
                     </form>    
-                        
+
                 </div>
             </div>
             <div id="content">
@@ -95,6 +96,9 @@ include 'user_func.php';
                     echo 'user_id error';
                   }
                 }
+                elseif ($_GET['tr']) {
+                  include 'translate.php';
+                }
                 else {
                   $pager_limit = 5;
                   if (isset($_GET['page']) && is_numeric($_GET['page'])):
@@ -111,7 +115,7 @@ include 'user_func.php';
                         . "<div class='autor'>{$row['user']}</div>"
                         . "<div class='date'>$created</div>"
                         . "<div class='contetnt-text'>$body</div>"
-                        . "<div class='more'><a href='index.php?id={$row['id']}'>".t('Read More')."</a></div></div><hr/>");
+                        . "<div class='more'><a href='index.php?id={$row['id']}'>" . t('Read More') . "</a></div></div><hr/>");
                   }
                   $sql = "SELECT FOUND_ROWS()";
                   $count_article = $dbh->query($sql)->fetchColumn();

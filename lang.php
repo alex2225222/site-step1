@@ -4,6 +4,6 @@ if (isset($_POST)) {
   $lang = substr(key($_POST), 0, 2);
   $_SESSION['lang'] = $lang;
 }
-header("Location: index.php");
+header("Location: ".$_SERVER['HTTP_REFERER']);
 exit();
 

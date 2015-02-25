@@ -30,7 +30,7 @@ function access_user($uid = null) {
 
 function user_form($uid = null) {
   $access = gen_access_form();
-  $_SESSION['$access_form'] = $access;
+  $_SESSION['access_form'] = $access;
   if ($uid) {
     $rid = access_user();
     if (in_array(4, $rid)) {
@@ -56,7 +56,7 @@ function user_form($uid = null) {
           <?php echo t('Name'); ?><input name="name" value="<?php echo $user['name']; ?>" type="text" /><br/>
           <?php echo t('Surname'); ?><input name="lastname" value="<?php echo $user['lastname']; ?>" type="text" /><br/>
           E-mail<input name="mail" value="<?php echo $user['mail']; ?>" type="email" /><br/>
-          <?php echo t('About me'); ?><br/><textarea name="info" rows="3"><?php echo $user['info']; ?></textarea><br/>
+          <?php echo t('About me'); ?><br/><textarea name="info_en" rows="3"><?php echo $user['info_en']; ?></textarea><br/>
           <?php echo t('Про себе (Ukrainian: about me)'); ?><br/><textarea name="info_ua" rows="3"><?php echo $user['info_ua']; ?></textarea><br/>
           <?php
           if (in_array(3, $rid)) {
@@ -231,7 +231,7 @@ function t($string, $lang = null) {
   if ($lang == 'en')
     return $string;
   include 'config.php';
-  $sql = "SELECT translation FROM local WHERE name='$string' and lang='$lang'";
+  $sql = "SELECT transl FROM local WHERE name='$string' and lang='$lang'";
   $translite = $dbh->query($sql)->fetchColumn();
   if ($translite) {
     return $translite;
@@ -239,4 +239,9 @@ function t($string, $lang = null) {
   else {
     return $string;
   }
+}
+
+function tt() {
+    $lang = isset($_SESSION['lang'])? $_SESSION['lang'] : 'en';
+    return $lang;
 }
