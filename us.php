@@ -35,22 +35,19 @@ if (!isset($_SESSION['user']) && isset($_POST['submit']) && $_POST['submit'] == 
     exit();
   }
 
-  try {
     include 'config.php';
     $sql = "SELECT * FROM users WHERE login='$login'";
     foreach ($dbh->query($sql) as $row) {
-      if (crypt($pass, '$5$rounds=5000$usesomesillystringforsalt$') == $row['password']) {
+      if (crypt($pass, $self) == $row['password']) {
         $_SESSION['user'] = $row;
+        include 'user_func.php';
+        access_user();
         header("Location: index.php");
         exit();
       }
     }
   }
-  catch (PDOException $e) {
-    die('error connect: ' . $e->getMessage());
-  }
-  $dbh = null;
-}
+
 header("Location: index.php");
 exit();
 ?>
