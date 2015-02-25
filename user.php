@@ -17,49 +17,50 @@ if (!isset($_POST['login'])) {
   }
 }
 else {
+  $access = isset($_POST['access']) ? $_POST['access'] : '';
+  if (empty($access) || $access != $_SESSION['$access_form']) {
+    header("Location: index.php");
+    exit;
+  }
+  else {
+    unset($_SESSION['$access_form']);
+  }
   include 'config.php';
-  if ((!isset($_SESSION['user']) || $_SESSION['user']['uid'] == 1) && isset($_POST['submit']) && $_POST['submit'] == 'add') {
-    $login = sec_text($_POST['login']);
-    if (empty($login)):
-      header("Location: index.php");
-      exit();
-    endif;
-    $sql = "SELECT login FROM users WHERE login='$login'";
-    if ($dbh->query($sql)->fetchColumn())
+  if ((!isset($_SESSION['user']) || in_array(3, $_SESSION['user']['rid'])) && isset($_POST['submit']) && $_POST['submit'] == 'add') {
+    $login = var_user('login', $_POST['login'], true);
+    // print_r($login);
+    // echo '<br>$login- ' . $login;
+    if (empty($login)) {
+      header("Location: index.php?user=0");
+      exit;
+    }
+    if ($login == '_')
       unset($login);
-    if (isset($_POST['pass'])) {
-      $pass = sec_text($_POST['pass']);
-      if (empty($pass)):
-        header("Location: index.php?user=0");
-        exit();
-      endif;
-      $pass = crypt($pass, '$5$rounds=5000$usesomesillystringforsalt$');
-    } else {
+    $pass = var_user('pass', $_POST['pass']);
+    // echo '<br>$pass- ' . $pass;
+    if (empty($pass)) {
       header("Location: index.php?user=0");
-      exit();
+      exit;
     }
-    if (isset($_POST['mail'])) {
-      $mail = sec_text($_POST['mail']);
-      if (empty($mail) || !filter_var($mail, FILTER_VALIDATE_EMAIL)) {
-        header("Location: index.php?user=0");
-        exit();
-      }
-      $sql = "SELECT mail FROM users WHERE mail='$mail'";
-      if ($dbh->query($sql)->fetchColumn())
-        unset($mail);
-    }
-    else {
+    $mail = var_user('mail', $_POST['mail'], true);
+    //echo '<br>$mail- ' . $mail;
+    if (empty($mail)) {
       header("Location: index.php?user=0");
-      exit();
+      exit;
     }
+    if ($mail == '_')
+      unset($mail);
+
     if ($login && $mail) {
       $created = $login_time = time();
       $sth = $dbh->prepare('INSERT INTO users SET login=?,password=?,mail=?,created=?,login_time=?');
       $sth->execute(array($login, $pass, $mail, $created, $login_time));
       $row = $sth->fetchAll();
-      print_r($row);
-      exit;
+      //print_r($row);
+      //exit;
       $uid = $dbh->lastInsertId();
+      $sth = $dbh->prepare('INSERT INTO users_roles SET uid=?,rid=1');
+      $sth->execute(array($uid));
       if (!isset($_SESSION['user'])) {
         $_SESSION['user'] = array(
           'uid' => $uid,
@@ -68,26 +69,31 @@ else {
           'created' => $created,
           'login_time' => $login_time,
         );
+        access_user();
       }
-      header("Location: index.php?user=$uid");
+      header("Location: index.php?user=$uid&op=edit");
+      exit;
     }
-
-    try {
-      include 'config.php';
-      $sql = "SELECT * FROM users WHERE login='$login'";
-      foreach ($dbh->query($sql) as $row) {
-        if (crypt($pass, '$5$rounds=5000$usesomesillystringforsalt$') == $row['password']) {
-          $_SESSION['user'] = $row;
-          header("Location: index.php");
-          exit();
-        }
-      }
+    else {
+      header("Location: index.php?user=0");
+      exit;
     }
-    catch (PDOException $e) {
-      die('error connect: ' . $e->getMessage());
-    }
-    $dbh = null;
   }
+//    try {
+//      include 'config.php';
+//      $sql = "SELECT * FROM users WHERE login='$login'";
+//      foreach ($dbh->query($sql) as $row) {
+//        if (crypt($pass, '$5$rounds=5000$usesomesillystringforsalt$') == $row['password']) {
+//          $_SESSION['user'] = $row;
+//          header("Location: index.php");
+//          exit();
+//        }
+//      }
+//    }
+//    catch (PDOException $e) {
+//      die('error connect: ' . $e->getMessage());
+//    }
+//    $dbh = null;  
 }
 
 

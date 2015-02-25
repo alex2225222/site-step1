@@ -1,4 +1,3 @@
-
 <?php
 session_start();
 ?>
@@ -24,12 +23,24 @@ session_start();
                           <a href='index.php?user=0'>Registration</a>
                       </form>
                     <?php else : ?>
-                      <div id="login-yes">You are already<br/>logged in</div>
+                      <div id="login-yes">Hi user "<?php echo $_SESSION['user']['login']; ?>"</div>
                       <form name="log-out" action="us.php" method="post">
                           <input value="signout" name="submit" type="submit" />
                       </form>
-                      <a href='index.php?id=create'>Create content</a>
-                    <?php endif; ?>
+                      <a href='index.php?user=<?php echo $_SESSION['user']['uid']; ?>&op=edit'>Edit profile</a>
+                      <?php
+                      if (in_array(4, $_SESSION['user']['rid'])) {
+                        echo "<h1>You profile is blocked</h1>";
+                      }
+                      else {
+                        if (in_array(2, $_SESSION['user']['rid']) || in_array(3, $_SESSION['user']['rid'])) {
+                          echo "<br/><a href='index.php?id=create'>Create content</a>";
+                        }
+                        if (in_array(3, $_SESSION['user']['rid']))
+                          echo "<br/><a href='index.php?user=0'>Add of new user</a>";
+                      }
+                    endif;
+                    ?>
                 </div>
             </div>
             <div id="content">
@@ -67,7 +78,7 @@ session_start();
                     echo 'edit_id error';
                   }
                 }
-                elseif ($_GET['user'] || $_GET['user']==0) {
+                elseif ($_GET['user'] || is_numeric($_GET['user'])) {
                   if (is_numeric($_GET['user'])) {
                     $uid = $_GET['user'];
                     include 'user.php';
@@ -97,7 +108,7 @@ session_start();
                   $sql = "SELECT FOUND_ROWS()";
                   $count_article = $dbh->query($sql)->fetchColumn();
                   $page_all = round(($count_article + $id_min) / $pager_limit);
-                  
+
                   //echo "page_all - $page_all, count_article - $count_article,  id_min - $id_min <br/>";
                   if ($page_all > 1) {
                     echo '<br/>';
