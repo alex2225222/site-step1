@@ -41,19 +41,23 @@ function user_form($uid = null) {
       include 'config.php';
       $sql = "SELECT * FROM users WHERE uid='$uid'";
       $user = $dbh->query($sql)->fetch();
+      $_SESSION['user_form'] = $user;
       ?>
       <h1>Edit of profile of user "<?php echo $user['login']; ?>"</h1>
       <form name="edit-user" action="user.php" method="post">
-          <div class="avatar"><img id="ava" src="img/<?php echo $user['avatar'] ? : 'avatar.jpeg'; ?>" width="130px" height="110px" />
+          <div class="avatar"><img id="ava" src="img/avatars/<?php echo $user['avatar'] ? : 'avatar.jpeg'; ?>" width="130px" height="110px" />
               <p align="center"><label for="avatar_label" id="photo"><?php echo 'add photo'; ?></label></p>
               <input name="fupload" id="fupload" class="fld" type="FILE"></div>
           <input type="hidden" name="access" value="<?php echo $access; ?>"/>
+          <input type="hidden" name="uid" value="<?php echo $user['uid']; ?>"/>
           Login<input name="login" value="<?php echo $user['login']; ?>" type="text" /><br/>
           Password<input name="pass" type="password" /><br/>
           Repeat<input name="repeat" type="password" onchange="pass_repeat(this.form)"/><br/>
           Name<input name="name" value="<?php echo $user['name']; ?>" type="text" /><br/>
           Surname<input name="lastname" value="<?php echo $user['lastname']; ?>" type="text" /><br/>
           E-mail<input name="mail" value="<?php echo $user['mail']; ?>" type="email" /><br/>
+          About me<br/><textarea name="info" rows="3"><?php echo $user['info']; ?></textarea><br/>
+          Про себе (Ukrainian: about me)<br/><textarea name="info_ua" rows="3"><?php echo $user['info_ua']; ?></textarea><br/>
           <?php
           if (in_array(3, $rid)) {
             $user_rid = access_user($uid);
@@ -126,14 +130,14 @@ function sec_text($text) {
 function var_user($type, $data, $op = false) {
   $data = sec_text($data);
   if (empty($data))
-    return '_';
+    return false;
   include 'config.php';
   switch ($type) {
     case 'login':
       if ($op) {
         $sql = "SELECT login FROM users WHERE login='$data'";
         if ($dbh->query($sql)->fetchColumn())
-          return false;
+          return '_';
       }
       break;
     case 'mail':
@@ -147,6 +151,10 @@ function var_user($type, $data, $op = false) {
       break;
     case 'pass':
       $data = crypt($data, $self);
+      break;
+    case 'id':
+      if (!is_numeric($data))
+        return false;
       break;
     default:
       break;
