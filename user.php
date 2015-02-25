@@ -9,11 +9,25 @@ endif;
 include 'user_func.php';
 
 if (!isset($_POST['login'])) {
+
   if ($uid == 0) {
     user_form();
   }
   else {
-    user_form($uid);
+    echo 'hi';
+    $op = isset($_GET['op']) ? $_GET['op'] : '';
+    switch ($op) {
+      case 'edit':
+        user_form($uid);
+        break;
+      case 'delete':
+        header("Location: index.php");
+        exit();
+        break;
+      default:
+        user_page($uid);
+        break;
+    }
   }
 }
 else {
@@ -80,14 +94,19 @@ else {
 //print_r($_POST);
 //echo '<br>';
 //echo '<br>';
-//print_r($_SESSION);
+////print_r($_SESSION);
+  //phpinfo();
+//print_r($_FILES);
+//exit;
   if ((isset($_SESSION['user']) || in_array(3, $_SESSION['user']['rid'])) && isset($_POST['submit']) && $_POST['submit'] == 'save') {
     $uid = var_user('id', $_POST['uid']);
-
+//print_r($_FILES);
+//exit;
     if (empty($uid) || $uid != $_SESSION['user_form']['uid']) {
       header("Location: index.php");
       exit;
     }
+
     $sql_array = array();
     $sql_add = array();
     $login = var_user('login_info', $_POST['login']);
@@ -105,6 +124,7 @@ else {
         $sql_array[] = $login;
       }
     }
+
     if ($_POST['pass']) {
       if ($_POST['pass'] != $_POST['repeat']) {
         header("Location: index.php?user=$uid");
@@ -118,8 +138,10 @@ else {
       $sql_add[] = 'password=?';
       $sql_array[] = $pass;
     }
+//        print_r($_FILES);
+//    exit;     
     $mail = var_user('mail_info', $_POST['mail']);
-    if ($mail != $_SESSION['$user_form']['mail']) {
+    if ($mail != $_SESSION['user_form']['mail']) {
       $mail = var_user('mail', $_POST['mail'], true);
       if (empty($mail)) {
         header("Location: index.php?user=$uid");
@@ -133,6 +155,8 @@ else {
         $sql_array[] = $mail;
       }
     }
+//        print_r($_FILES);
+//    exit;     
     $array_add_field = array('name', 'lastname', 'info', 'info_ua');
     foreach ($array_add_field as $value) {
       if ($_POST[$value]) {
@@ -145,12 +169,14 @@ else {
         $sql_array[] = $name;
       }
     }
-    print_r($_FILES);
-    exit;   
+//    print_r($sql_array);
+//    print_r($_FILES);
+//    exit;
     if ($_FILES['fupload']['name']) {
-     
+
       include ("avatar.php");
-      $avatar = create_avatar($created);
+      $filename = $login;
+      $avatar = create_avatar($filename);
       $sql_add[] = 'avatar=?';
       $sql_array[] = $avatar;
     }

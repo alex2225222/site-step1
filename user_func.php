@@ -43,21 +43,21 @@ function user_form($uid = null) {
       $user = $dbh->query($sql)->fetch();
       $_SESSION['user_form'] = $user;
       ?>
-      <h1>Edit of profile of user "<?php echo $user['login']; ?>"</h1>
+      <h1><?php echo t('Edit of profile of user'); ?> "<?php echo $user['login']; ?>"</h1>
       <form name="edit-user" action="user.php" method="post">
           <div class="avatar"><img id="ava" src="img/avatars/<?php echo $user['avatar'] ? : 'avatar.jpeg'; ?>" width="130px" height="110px" />
-              <p align="center"><label for="avatar_label" id="photo"><?php echo 'add photo'; ?></label></p>
-              <input name="fupload" id="fupload" class="fld" type="FILE"></div>
+              <p align="center"><label for="avatar_label" id="photo"><?php echo t('add photo'); ?></label></p>
+              <input name="fupload" id="fupload" class="fld" type="file"></div>
           <input type="hidden" name="access" value="<?php echo $access; ?>"/>
           <input type="hidden" name="uid" value="<?php echo $user['uid']; ?>"/>
-          Login<input name="login" value="<?php echo $user['login']; ?>" type="text" /><br/>
-          Password<input name="pass" type="password" /><br/>
-          Repeat<input name="repeat" type="password" onchange="pass_repeat(this.form)"/><br/>
-          Name<input name="name" value="<?php echo $user['name']; ?>" type="text" /><br/>
-          Surname<input name="lastname" value="<?php echo $user['lastname']; ?>" type="text" /><br/>
+          <?php echo t('Login'); ?><input name="login" value="<?php echo $user['login']; ?>" type="text" /><br/>
+          <?php echo t('Password'); ?><input name="pass" type="password" /><br/>
+          <?php echo t('Repeat'); ?><input name="repeat" type="password" onchange="pass_repeat(this.form)"/><br/>
+          <?php echo t('Name'); ?><input name="name" value="<?php echo $user['name']; ?>" type="text" /><br/>
+          <?php echo t('Surname'); ?><input name="lastname" value="<?php echo $user['lastname']; ?>" type="text" /><br/>
           E-mail<input name="mail" value="<?php echo $user['mail']; ?>" type="email" /><br/>
-          About me<br/><textarea name="info" rows="3"><?php echo $user['info']; ?></textarea><br/>
-          Про себе (Ukrainian: about me)<br/><textarea name="info_ua" rows="3"><?php echo $user['info_ua']; ?></textarea><br/>
+          <?php echo t('About me'); ?><br/><textarea name="info" rows="3"><?php echo $user['info']; ?></textarea><br/>
+          <?php echo t('Про себе (Ukrainian: about me)'); ?><br/><textarea name="info_ua" rows="3"><?php echo $user['info_ua']; ?></textarea><br/>
           <?php
           if (in_array(3, $rid)) {
             $user_rid = access_user($uid);
@@ -87,7 +87,7 @@ function user_form($uid = null) {
                 reader.readAsDataURL(f);
             }
         }
-        document.getElementById('fupload').addEventListener('change', SketchFileSelect, false);
+        //document.getElementById('fupload').addEventListener('change', SketchFileSelect, false);
       </script>
       <?php
     }
@@ -100,9 +100,9 @@ function user_form($uid = null) {
     <h1>Registration of new user</h1>
     <form name="create-user" action="user.php" method="post">
         <input type="hidden" name="access" value="<?php echo $access; ?>"/>
-        Login<input name="login" type="text" /><br/>
-        Password<input name="pass" type="password" /><br/>
-        Repeat<input name="repeat" type="password" onchange="pass_repeat(this.form)"/><br/>
+        <?php echo t('Login'); ?><input name="login" type="text" /><br/>
+        <?php echo t('Password'); ?><input name="pass" type="password" /><br/>
+        <?php echo t('Repeat'); ?><input name="repeat" type="password" onchange="pass_repeat(this.form)"/><br/>
         E-mail<input name="mail" type="email" /><br/>
         <input value="add" name="submit" type="submit" />
     </form>  
@@ -118,6 +118,68 @@ function user_form($uid = null) {
     }
   </script>
   <?php
+}
+
+function user_page($uid) {
+  $access = gen_access_form();
+  $_SESSION['$access_form'] = $access;
+  if ($uid) {
+    $rid = access_user();
+    if (in_array(4, $rid)) {
+      echo "<h1>".t('access denied. Your profile is blocked.')."</h1>";
+      return;
+    }
+    if ($uid == $_SESSION['user']['uid'] || in_array(3, $rid)) {
+      include 'config.php';
+      $sql = "SELECT * FROM users WHERE uid='$uid'";
+      $user = $dbh->query($sql)->fetch();
+      $_SESSION['user_form'] = $user;
+      ?>
+      <h1>Profile of user "<?php echo $user['login']; ?>"</h1>
+      <div class="avatar">
+          <?php
+          if ($user['avatar']) {
+            echo "<a href='img/original/{$user['avatar']}'><img src='img/avatars/{$user['avatar']}' /></a>";
+          }
+          else {
+            ?>
+            <img src="img/avatars/avatar.jpg" width="125" height="110" />
+          <?php } ?>
+      </div>
+      <p>
+          <label for="name"><b><?php echo $lang['name']; ?>:</b></label>
+          <?php if (iconv_strlen($user['name'], 'UTF-8') > 17) echo '</p><p align="right">';
+          echo $user['name']; ?>
+      </p>
+      <p>
+          <label for="sname"><b><?php echo $lang['sname']; ?>:</b></label>
+          <?php if (iconv_strlen($user['sname'], 'UTF-8') > 17) echo '</p><p align="right">';
+          echo ' ' . $user['sname']; ?>
+      </p>
+      <p>
+          <label for="city"><b><?php echo $lang['city']; ?>:</b></label>
+      <?php if (iconv_strlen($user['city'], 'UTF-8') > 17) echo '</p><p align="right">';
+      echo $user['city']; ?>
+      </p> 
+      <p>
+          <label for="mail"><b><?php echo $lang['mail']; ?>:</b></label>
+      <?php if (iconv_strlen($user['mail'], 'UTF-8') > 17) echo '</p><p align="right">';
+      echo $user['mail']; ?>
+      </p>
+      <p>
+          <label for="mail"><b><?php echo $lang['created']; ?>:</b></label>
+      <?php echo date("d-m-Y H:i", $user['created']); ?>
+      </p>
+      <p>
+          <label for="mail"><b><?php echo $lang['access']; ?>:</b></label>
+      <?php echo date("d-m-Y H:i", $user['access']); ?>
+      </p>     
+      <?php
+    }
+    else {
+      echo "<h1>access denied</h1>";
+    }
+  }
 }
 
 function sec_text($text) {
@@ -160,4 +222,21 @@ function var_user($type, $data, $op = false) {
       break;
   }
   return $data;
+}
+
+function t($string, $lang = null) {
+  if(empty($lang)){
+    $lang = isset($_SESSION['lang'])? $_SESSION['lang'] : 'en';
+  }
+  if ($lang == 'en')
+    return $string;
+  include 'config.php';
+  $sql = "SELECT translation FROM local WHERE name='$string' and lang='$lang'";
+  $translite = $dbh->query($sql)->fetchColumn();
+  if ($translite) {
+    return $translite;
+  }
+  else {
+    return $string;
+  }
 }

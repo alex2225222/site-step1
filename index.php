@@ -1,46 +1,54 @@
 <?php
 session_start();
+include 'user_func.php';
 ?>
 <!doctype html>
 <html><head>
         <meta charset="utf-8">
-        <title>Home</title>
+        <title><?php echo t('Home'); ?></title>
         <link type="text/css" rel="stylesheet" href="style.css">
     </head>
     <body>
         <div id="site">
             <div id="top">
                 <img src="logo.jpeg"/>
-                <div id="site-name"><a href="index.php">Site of car</a></div>
+                <div id="site-name"><a href="index.php"><?php echo t('Site of car'); ?></a></div>
             </div>
             <div id="left">
                 <div id="login">
                     <?php if (!isset($_SESSION['user'])) : ?>
                       <form name="authrization" action="us.php" method="post">
-                          Login<input name="login" type="text" />
-                          Password<input name="pass" type="password" />
+                          <?php echo t('Login'); ?><input name="login" type="text" />
+                          <?php echo t('Password'); ?><input name="pass" type="password" />
                           <input value="signin" name="submit" type="submit" />
-                          <a href='index.php?user=0'>Registration</a>
+                          <a href='index.php?user=0'><?php echo t('Registration'); ?></a>
                       </form>
                     <?php else : ?>
-                      <div id="login-yes">Hi user "<?php echo $_SESSION['user']['login']; ?>"</div>
+                      <div id="login-yes"><?php echo t('Hi user'); ?> "<?php echo $_SESSION['user']['login']; ?>"</div>
                       <form name="log-out" action="us.php" method="post">
                           <input value="signout" name="submit" type="submit" />
                       </form>
-                      <a href='index.php?user=<?php echo $_SESSION['user']['uid']; ?>&op=edit'>Edit profile</a>
+                      <a href='index.php?user=<?php echo $_SESSION['user']['uid']; ?>&op=edit'><?php echo t('Edit profile'); ?></a>
                       <?php
                       if (in_array(4, $_SESSION['user']['rid'])) {
-                        echo "<h1>You profile is blocked</h1>";
+                        echo "<h1>".t('You profile is blocked')."</h1>";
                       }
                       else {
                         if (in_array(2, $_SESSION['user']['rid']) || in_array(3, $_SESSION['user']['rid'])) {
-                          echo "<br/><a href='index.php?id=create'>Create content</a>";
+                          echo "<br/><a href='index.php?id=create'>".t('Create content')."</a>";
                         }
                         if (in_array(3, $_SESSION['user']['rid']))
-                          echo "<br/><a href='index.php?user=0'>Add of new user</a>";
+                          echo "<br/><a href='index.php?user=0'>".t('Add of new user')."</a>";
                       }
                     endif;
                     ?>
+                </div>
+                <div id="lang">
+                    <form name="lang" action="lang.php" method="post">
+                        <input type="image" src="img/ua.png" name="ua" value="ua">
+                        <input type="image" src="img/en.png" name="en" value="en">
+                    </form>    
+                        
                 </div>
             </div>
             <div id="content">
@@ -103,7 +111,7 @@ session_start();
                         . "<div class='autor'>{$row['user']}</div>"
                         . "<div class='date'>$created</div>"
                         . "<div class='contetnt-text'>$body</div>"
-                        . "<div class='more'><a href='index.php?id={$row['id']}'>Read More</a></div></div><hr/>");
+                        . "<div class='more'><a href='index.php?id={$row['id']}'>".t('Read More')."</a></div></div><hr/>");
                   }
                   $sql = "SELECT FOUND_ROWS()";
                   $count_article = $dbh->query($sql)->fetchColumn();
