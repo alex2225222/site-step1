@@ -28,7 +28,7 @@ include 'user_func.php';
                       <form name="log-out" action="us.php" method="post">
                           <input value="signout" name="submit" type="submit" />
                       </form>
-                      <a href='index.php?user=<?php echo $_SESSION['user']['uid']; ?>&op=edit'><?php echo t('Edit profile'); ?></a>
+                      <a href='index.php?user=<?php echo $_SESSION['user']['uid']; ?>'><?php echo t('My profile'); ?></a>
                       <?php
                       if (in_array(4, $_SESSION['user']['rid'])) {
                         echo "<h1>" . t('You profile is blocked') . "</h1>";
@@ -55,7 +55,6 @@ include 'user_func.php';
             <div id="content">
                 <?php
                 include 'config.php';
-                //print_r($_GET);
                 if (isset($_GET['id'])) {
                   if (is_numeric($_GET['id'])) {
                     $id = $_GET['id'];
@@ -64,10 +63,6 @@ include 'user_func.php';
                     if ($article = article_view($id, $lang)) {
                       echo $article;
                     }
-//                    else {
-//                      header("Location: index.php");
-//                      exit();
-//                    }
                   }
                   elseif ($_GET['id'] == 'create' && isset($_SESSION['user'])) {
                     article_edit('create');
@@ -94,6 +89,8 @@ include 'user_func.php';
                   if (is_numeric($_GET['user'])) {
                     $uid = $_GET['user'];
                     include 'user.php';
+                  }elseif($_GET['user']=='all'){
+                    echo user_list();
                   }
                   else {
                     echo 'user_id error';

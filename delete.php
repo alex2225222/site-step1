@@ -22,11 +22,10 @@ if (!isset($_POST['id']) && isset($_GET['id']) && is_numeric($_GET['id'])){
       exit();      
     endif;
     include 'config.php';
+    $sql = "DELETE FROM fields WHERE type='article' and id_type = '$id'";
+    $count = $dbh->exec($sql);    
     $sql = "DELETE FROM article WHERE id = '$id'";
-    //echo $sql;
     $count = $dbh->exec($sql);
-    //if (count($count)) 
-    $dbh = null;
   endif;
 header ("Location: index.php");
 exit();  

@@ -6,6 +6,17 @@ function gen_access_form() {
   return $access;
 }
 
+function user_lasttime() {
+  if (isset($_SESSION['user'])) {
+    $uid = $_SESSION['user']['uid'];
+    $created = time();
+    include 'config.php';
+    $sth = $dbh->prepare('UPDATE users SET login_time=? WHERE uid=?');
+    $sth->execute(array($created, $uid));
+    $_SESSION['user']['login_time'] = $created;
+  }
+}
+
 function access_user($uid = null) {
 
   if (!$uid || !is_numeric($uid)) {
@@ -29,6 +40,7 @@ function access_user($uid = null) {
 }
 
 function user_form($uid = null) {
+  user_lasttime();
   $access = gen_access_form();
   $_SESSION['access_form'] = $access;
   if ($uid) {
@@ -129,8 +141,7 @@ function user_form($uid = null) {
 }
 
 function user_page($uid) {
-  $access = gen_access_form();
-  $_SESSION['$access_form'] = $access;
+  user_lasttime();
   if ($uid) {
     $rid = access_user();
     if (in_array(4, $rid)) {
@@ -141,60 +152,29 @@ function user_page($uid) {
       include 'config.php';
       $sql = "SELECT * FROM users WHERE uid='$uid'";
       $user = $dbh->query($sql)->fetch();
-      $_SESSION['user_form'] = $user;
-      ?>
-      <h1>Profile of user "<?php echo $user['login']; ?>"</h1>
-      <div class="avatar">
-          <?php
-          if ($user['avatar']) {
-            echo "<a href='img/original/{$user['avatar']}'><img src='img/avatars/{$user['avatar']}' /></a>";
-          }
-          else {
-            ?>
-            <img src="img/avatars/avatar.jpg" width="125" height="110" />
-          <?php } ?>
-      </div>
-      <p>
-          <label for="name"><b><?php echo $lang['name']; ?>:</b></label>
-          <?php
-          if (iconv_strlen($user['name'], 'UTF-8') > 17)
-            echo '</p><p align="right">';
-          echo $user['name'];
-          ?>
-      </p>
-      <p>
-          <label for="sname"><b><?php echo $lang['sname']; ?>:</b></label>
-          <?php
-          if (iconv_strlen($user['sname'], 'UTF-8') > 17)
-            echo '</p><p align="right">';
-          echo ' ' . $user['sname'];
-          ?>
-      </p>
-      <p>
-          <label for="city"><b><?php echo $lang['city']; ?>:</b></label>
-          <?php
-          if (iconv_strlen($user['city'], 'UTF-8') > 17)
-            echo '</p><p align="right">';
-          echo $user['city'];
-          ?>
-      </p> 
-      <p>
-          <label for="mail"><b><?php echo $lang['mail']; ?>:</b></label>
-          <?php
-          if (iconv_strlen($user['mail'], 'UTF-8') > 17)
-            echo '</p><p align="right">';
-          echo $user['mail'];
-          ?>
-      </p>
-      <p>
-          <label for="mail"><b><?php echo $lang['created']; ?>:</b></label>
-          <?php echo date("d-m-Y H:i", $user['created']); ?>
-      </p>
-      <p>
-          <label for="mail"><b><?php echo $lang['access']; ?>:</b></label>
-          <?php echo date("d-m-Y H:i", $user['access']); ?>
-      </p>     
-      <?php
+      echo '<h1>' . t('Profile of user') . ' "' . $user['login'] . '"</h1>';
+      echo "<div class='avatar'>";
+      if ($user['avatar']) {
+        echo "<a href='img/original/{$user['avatar']}'><img src='img/avatars/{$user['avatar']}' /></a>";
+      }
+      else {
+        echo '<img src="img/avatars/avatar.jpeg" width="125" height="110" />';
+      }
+      echo '</div>';
+      echo "<div class='login'>" . t('Login') . ': ' . $user['login'] . "</div>";
+      echo "<div class='mail'>" . t('E-mail') . ': ' . $user['mail'] . "</div>";
+      if ($user['name'])
+        echo "<div class='name'>" . t('Name') . ': ' . $user['name'] . "</div>";
+      if ($user['lastname'])
+        echo "<div class='surname'>" . t('Surname') . ': ' . $user['lastname'] . "</div>";
+      $lang = tt();
+      if ($user['info_' . $lang])
+        echo "<div class='info'>" . t('Info') . ': ' . $user['info_' . $lang] . "</div>";
+      $created = date('d.m.Y G:i', $user['created']);
+      echo "<div class='date'>" . t('Time created') . ': ' . $created . "</div>";
+      $login_time = date('d.m.Y G:i', $user['login_time']);
+      echo "<div class='date'>" . t('Last time') . ': ' . $login_time . "</div>";
+      echo "<div class='link'><a href='index.php?user=$uid&op=edit'>" . t('Edit profile') . "</a></div>";
     }
     else {
       echo "<h1>access denied</h1>";

@@ -189,7 +189,7 @@ else {
     if ($_FILES['fupload']['name']) {
 
       include ("avatar.php");
-      $filename = $login;
+      $filename = time();
       $avatar = create_avatar($filename);
       $sql_add[] = 'avatar=?';
       $sql_array[] = $avatar;
@@ -203,7 +203,7 @@ else {
       $sth->execute($sql_array);
       $row = $sth->fetchAll();
     }
-    header("Location: index.php?user=$uid&op=edit");
+    header("Location: index.php?user=$uid");
     exit;
   }
 }
