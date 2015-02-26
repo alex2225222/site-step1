@@ -258,7 +258,7 @@ function tt() {
   return $lang;
 }
 
-function load_field_view($type, $id, $lang, $teaser = true, $sovpad = false) {
+function load_field_view($type, $id, $lang, $teaser = array('field'=>'body', 'max'=>6), $sovpad = false) {
   include 'config.php';
   $type_array = array();
   $sql = "SELECT * FROM fields WHERE type='$type' and id_type='$id'";
