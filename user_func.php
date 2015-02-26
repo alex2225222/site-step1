@@ -80,7 +80,7 @@ function user_form($uid = null) {
             $sql = "SELECT * FROM roles";
             foreach ($dbh->query($sql) as $row) {
               $r = in_array($row['rid'], $user_rid) ? " checked='checked'" : '';
-              $u = $row['rid'] == 1 ? ' disabled' : '';
+              $u = $row['rid'] == 1 ? ' readonly' : '';
               echo "<label><input type='checkbox' name='rid{$row['rid']}'$r$u/>{$row['roles']}</label><br/>";
             }
           }

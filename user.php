@@ -47,37 +47,37 @@ else {
   if ((!isset($_SESSION['user']) || in_array(3, $_SESSION['user']['rid'])) && isset($_POST['add'])) {
     $login = var_user('login', $_POST['login'], true);
     if (empty($login)) {
-      $_SESSION['message']=t('error login');
+      $_SESSION['message'] = t('error login');
       header("Location: index.php?user=0");
       exit;
     }
-    if ($login == '_'){
+    if ($login == '_') {
       unset($login);
-      $_SESSION['message']=t('repeat login');
+      $_SESSION['message'] = t('repeat login');
     }
-      
+
     if ($_POST['pass'] != $_POST['repeat']) {
-      $_SESSION['message']=t('repeat != pass');
+      $_SESSION['message'] = t('repeat != pass');
       header("Location: index.php?user=0");
       exit;
     }
     $pass = var_user('pass', $_POST['pass']);
     if (empty($pass)) {
-      $_SESSION['message']=t('error pass');
+      $_SESSION['message'] = t('error pass');
       header("Location: index.php?user=0");
       exit;
     }
     $mail = var_user('mail', $_POST['mail'], true);
     if (empty($mail)) {
-      $_SESSION['message']=t('error email');
+      $_SESSION['message'] = t('error email');
       header("Location: index.php?user=0");
       exit;
     }
-    if ($mail == '_'){
+    if ($mail == '_') {
       unset($mail);
-      $_SESSION['message']=t('repeat email');
+      $_SESSION['message'] = t('repeat email');
     }
-      
+
 
     if ($login && $mail) {
       $created = $login_time = time();
@@ -87,6 +87,7 @@ else {
       $uid = $dbh->lastInsertId();
       $sth = $dbh->prepare('INSERT INTO users_roles SET uid=?,rid=1');
       $sth->execute(array($uid));
+
       if (!isset($_SESSION['user'])) {
         $_SESSION['user'] = array(
           'uid' => $uid,
@@ -97,7 +98,7 @@ else {
         );
         user_rid();
       }
-      $_SESSION['message']=t('profile saved');
+      $_SESSION['message'] = t('profile saved');
       header("Location: index.php?user=$uid&op=edit");
       exit;
     }
@@ -122,13 +123,13 @@ else {
     if ($login != $_SESSION['user_form']['login']) {
       $login = var_user('login', $_POST['login'], true);
       if (empty($login)) {
-        $_SESSION['message']=t('error login');
+        $_SESSION['message'] = t('error login');
         header("Location: index.php?user=$uid");
         exit;
       }
       if ($login == '_') {
         unset($login);
-        $_SESSION['message']=t('repeat login');
+        $_SESSION['message'] = t('repeat login');
       }
       else {
         $sql_add[] = 'login=?';
@@ -138,13 +139,13 @@ else {
 
     if ($_POST['pass']) {
       if ($_POST['pass'] != $_POST['repeat']) {
-        $_SESSION['message']=t('repeat !=  pass');
+        $_SESSION['message'] = t('repeat !=  pass');
         header("Location: index.php?user=$uid");
         exit;
       }
       $pass = var_user('pass', $_POST['pass']);
       if (empty($pass)) {
-        $_SESSION['message']=t('error pass');
+        $_SESSION['message'] = t('error pass');
         header("Location: index.php?user=$uid");
         exit;
       }
@@ -157,12 +158,12 @@ else {
     if ($mail != $_SESSION['user_form']['mail']) {
       $mail = var_user('mail', $_POST['mail'], true);
       if (empty($mail)) {
-        $_SESSION['message']=t('error mail');
+        $_SESSION['message'] = t('error mail');
         header("Location: index.php?user=$uid");
         exit;
       }
       if ($mail == '_') {
-        $_SESSION['message']=t('repeat mail');
+        $_SESSION['message'] = t('repeat mail');
         unset($mail);
       }
       else {
@@ -177,7 +178,7 @@ else {
       if ($_POST[$value]) {
         $name = var_user($value, $_POST[$value]);
         if (empty($name)) {
-          $_SESSION['message']=t('error '.$value);
+          $_SESSION['message'] = t('error ' . $value);
           header("Location: index.php?user=$uid");
           exit;
         }
@@ -185,9 +186,20 @@ else {
         $sql_array[] = $name;
       }
     }
-//    print_r($sql_array);
+ //   print_r($_POST);
+    if (isset($_POST['rid1'])) {
+      include_once 'config.php';
+      $sql = "DELETE FROM users_roles WHERE uid = '$uid'";
+      $count = $dbh->exec($sql);
+      for ($x = 1; $x <= 4; $x++) {
+        if (isset($_POST['rid' . $x])) {
+          $sth = $dbh->prepare('INSERT INTO users_roles SET uid=?,rid=?');
+          $sth->execute(array($uid, $x));
+        }
+      }
+    }
 //    print_r($_FILES);
-//    exit;
+  //  exit;
     if ($_FILES['fupload']['name']) {
 
       include ("avatar.php");
@@ -199,7 +211,7 @@ else {
 
     if ($sql_array) {
       $sql_array[] = $uid;
-      include 'config.php';
+      include_once 'config.php';
       $sql = 'UPDATE users SET ' . implode(',', $sql_add) . ' WHERE uid=?';
       $sth = $dbh->prepare($sql);
       $sth->execute($sql_array);
