@@ -18,12 +18,16 @@ function user_lasttime() {
 }
 
 function user_rid($uid = null) {
-
+  $edit_session = false;
   if (!$uid || !is_numeric($uid)) {
     if (isset($_SESSION['user'])) {
       $uid = $_SESSION['user']['uid'];
-      if (isset($_SESSION['user']['rid']) && !empty($_SESSION['user']['rid']))
+      if (isset($_SESSION['user']['rid']) && !empty($_SESSION['user']['rid'])) {
         return $_SESSION['user']['rid'];
+      }
+      else {
+        $edit_session = true;
+      }
     }
     else {
       return false;
@@ -35,7 +39,8 @@ function user_rid($uid = null) {
   foreach ($dbh->query($sql) as $row) {
     $rid[] = $row['rid'];
   }
-  $_SESSION['user']['rid'] = $rid;
+  if ($edit_session)
+    $_SESSION['user']['rid'] = $rid;
   return $rid;
 }
 
@@ -112,14 +117,14 @@ function user_form($uid = null) {
     }
   }
   else {
-    echo "<h1>".t('Registration of new user')."</h1>";
+    echo "<h1>" . t('Registration of new user') . "</h1>";
     ?>
-    
+
     <form name="create-user" action="user.php" method="post">
         <input type="hidden" name="access" value="<?php echo $access; ?>"/>
         <?php echo t('Login'); ?><input name="login" type="text" /><br/>
-        <?php echo t('Password'); ?><input name="pass" type="password" /><br/>
-        <?php echo t('Repeat'); ?><input name="repeat" type="password" onchange="pass_repeat(this.form)"/><br/>
+    <?php echo t('Password'); ?><input name="pass" type="password" /><br/>
+    <?php echo t('Repeat'); ?><input name="repeat" type="password" onchange="pass_repeat(this.form)"/><br/>
         E-mail<input name="mail" type="email" /><br/>
         <input value="<?php echo t('Save'); ?>" name="add" type="submit" />
     </form>  
@@ -197,8 +202,8 @@ function user_list() {
     echo '<table class="users">';
     echo "<tr><th>" . t('Login') . "</th><th>" . t('E-mail') . "</th><th>" . t('Name') . "</th><th>" . t('Surname') . "</th><th>" . t('Operation') . "</th></tr>";
     foreach ($dbh->query($sql) as $row) {
-      $ed = l(t('Edit'),array('user'=>$row['uid'],'op'=>'edit'));
-      $del ="<a href='delete.php?id=".$row['uid']."&type=user'>delete</a>";// l(t('Delete'),array('user'=>$row['uid'],'op'=>'delete'));
+      $ed = l(t('Edit'), array('user' => $row['uid'], 'op' => 'edit'));
+      $del = "<a href='delete.php?id=" . $row['uid'] . "&type=user'>delete</a>"; // l(t('Delete'),array('user'=>$row['uid'],'op'=>'delete'));
       echo "<tr><td>" . $row['login'] . "</td><td>" . $row['mail'] . "</td><td>" . $row['name'] . "</td><td>" . $row['lastname'] . "</td><td>" . $ed . '/' . $del . "</td></tr>";
     }
     echo '</table>';
