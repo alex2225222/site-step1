@@ -258,7 +258,7 @@ function tt() {
   return $lang;
 }
 
-function load_field_view($type, $id, $lang, $teaser = array('field'=>'body', 'max'=>6), $sovpad = false) {
+function load_field_view($type, $id, $lang, $teaser = array('field' => 'body', 'max' => 12), $sovpad = false) {
   include 'config.php';
   $type_array = array();
   $sql = "SELECT * FROM fields WHERE type='$type' and id_type='$id'";
@@ -270,7 +270,12 @@ function load_field_view($type, $id, $lang, $teaser = array('field'=>'body', 'ma
     }
   }
   if ($teaser && isset($type_array[$teaser['field']])) {
-    $type_array['teaser'] = substr($teaser['field'], 0, $teaser['max']);
+    if (strlen($type_array[$teaser['field']])>$teaser['max']){
+      $type_array['teaser'] = substr($type_array[$teaser['field']], 0, $teaser['max']) . '....';
+    }else{
+      $type_array['teaser'] = $type_array[$teaser['field']];
+    }
+    
   }
   return $type_array;
 }
@@ -306,10 +311,82 @@ function save_field($type, $id, $type_array) {
   }
 }
 
+function save_field_prepare($type, $type_id, $lang, $field, $text, $id = false) {
+  $type_array = array(
+    $lang => array(
+      'lang' => $lang,
+      'field' => $field,
+      'text' => $text,
+    )
+  );
+  if ($id)
+    $type_array[$lang]['id'] = $id;
+  save_field($type, $type_id, $type_array);
+}
+
+function save_article($post) {
+  $article = isset($_SESSION['article']) ? $_SESSION['article'] : '';
+  unset($_SESSION['article']);
+  include_once 'config.php';
+  if ($article) {
+    $id = (integer)$article['id'];
+    foreach ($article['fields'] as $lang => $value) {
+      if (empty($post['title_' . $lang]) || empty($post['lang_' . $lang]) || empty($post['body' . $lang])) {
+        
+      }
+      foreach ($value as $name_field => $value1) {
+        if ($post[$name_field . '_' . $lang] != $value1['text']) {
+          $name = var_user($name_field, $post[$name_field . '_' . $lang]);
+          save_field_prepare('article', $id, $lang, $name_field, $name, $value1['id']);
+        }
+      }
+    }
+    if (isset($post['title_new']) && isset($post['lang_new']) && isset($post['body_new'])) {
+      $title = var_user('title', $post['title_new'], true);
+      $lang = var_user('lang', $post['lang_new'], true);
+      $body = var_user('body', $post['body_new'], true);
+      if ($title && $lang && $body) {
+        $field_array = array('title', 'body');
+        foreach ($field_array as $value) {
+          save_field_prepare('article', $id, $lang, $value, $$value);
+        }
+      }
+    }
+  }
+  else {
+    if (isset($post['title_new']) && isset($post['lang_new']) && isset($post['body_new'])) {
+      $title = var_user('title', $post['title_new'], true);
+      if (empty($title)) {
+        return false;
+      }
+      $lang = var_user('lang', $post['lang_new'], true);
+      if (empty($lang)) {
+        return false;
+      }
+      $body = var_user('body', $post['body_new'], true);
+      if (empty($body)) {
+        return false;
+      }
+      $created = time();
+      $user = $_SESSION['user']['login'];
+      $sth = $dbh->prepare('INSERT INTO article SET user=?,created=?,lk=0');
+      $sth->execute(array($user, $created));
+      $id = $dbh->lastInsertId();
+      $field_array = array('title', 'body');
+      foreach ($field_array as $value) {
+        save_field_prepare('article', $id, $lang, $value, $$value);
+      }
+    }
+  }
+  return $id;
+}
+
 function load_article_view($id, $lang) {
   include 'config.php';
   $sql = "SELECT * FROM article WHERE id=$id";
   $article = $dbh->query($sql)->fetch();
+  if (empty($article))
+    return false;
   $fields = load_field_view('article', $id, $lang);
   $article_full = array(
     'id' => $id,
@@ -324,11 +401,13 @@ function load_article_view($id, $lang) {
 
 function article_view($id, $lang, $teaser = false) {
   $article = load_article_view($id, $lang);
+  if (empty($article))
+    return false;
   $output = '';
   if ($teaser) {
     $created = date('d.m.Y', $article['created']);
     $output .= "<div class='block-teaser'><h1><a href='index.php?id=$id'>{$article['fields']['title']}</a></h1>"
-        . "<div class='autor'>{$article['user']}</div>"
+        . "<div class='autor'>{$article['autor']}</div>"
         . "<div class='date'>$created</div>"
         . "<div class='contetnt-text'>{$article['fields']['teaser']}</div>"
         . "<div class='more'><a href='index.php?id=$id'>" . t('Read More') . "</a></div></div><hr/>";
@@ -336,7 +415,7 @@ function article_view($id, $lang, $teaser = false) {
   else {
     $created = date('d.m.Y', $article['created']);
     $output .="<h1>{$article['fields']['title']}</h1>"
-        . "<div class='autor'>{$article['user']}</div>"
+        . "<div class='autor'>{$article['autor']}</div>"
         . "<div class='date'>$created</div>"
         . "<div class='contetnt-text'>{$article['fields']['body']}</div>";
     if (isset($_SESSION['user'])) //prava
@@ -359,7 +438,7 @@ function article_edit($op, $id = null) {
         $sql = "SELECT * FROM article WHERE id=$id";
         $article = $dbh->query($sql)->fetch();
         $fields = load_field_edit('article', $id);
-        $_SESSION['fields'] = array('id' => $id, 'fields' => $fields);
+        $_SESSION['article'] = array('id' => $id, 'fields' => $fields, 'user' => $article['user'], 'created' => $article['created']);
         foreach ($fields as $key => $value) {
           echo '<div class="lang-article">';
           echo t('Title') . '<input name="title_' . $key . '" type="text"  value="' . $value['title']['text'] . '"/><br/>';
@@ -367,7 +446,7 @@ function article_edit($op, $id = null) {
           echo t('Body') . '<textarea name="body_' . $key . '" rows="8">' . $value['body']['text'] . '</textarea><hr/></div>';
         }
       }
-      if ($op == 'edit')
+      if ($op == 'edit' && $fields)
         break;
     case 'create':
       echo '<div class="add-lang">';
@@ -378,6 +457,6 @@ function article_edit($op, $id = null) {
     default:
       break;
   }
-  echo '<input value="'.t('Add lang').'" name="add_lang" type="submit" />';
-  echo '<input value="'.t('save').'" name="submit" type="submit" /></form>';
+  echo '<input value="' . t('Add lang') . '" name="add_lang" type="submit" />';
+  echo '<input value="' . t('Save') . '" name="save" type="submit" /></form>';
 }

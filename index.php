@@ -60,11 +60,17 @@ include 'user_func.php';
                   if (is_numeric($_GET['id'])) {
                     $id = $_GET['id'];
                     $lang = tt();
-                    echo article_view($id, $lang);
+
+                    if ($article = article_view($id, $lang)) {
+                      echo $article;
+                    }
+//                    else {
+//                      header("Location: index.php");
+//                      exit();
+//                    }
                   }
                   elseif ($_GET['id'] == 'create' && isset($_SESSION['user'])) {
-                    // print_r($_SESSION);
-                    include 'create.php';
+                    article_edit('create');
                   }
                   else {
                     echo 'id error';
@@ -73,7 +79,12 @@ include 'user_func.php';
                 elseif ($_GET['edit']) {
                   if (is_numeric($_GET['edit'])) {
                     $id = $_GET['edit'];
-                    include 'edit.php';
+                    if (isset($_GET['add_field'])) {
+                      article_edit('add_lang', $id);
+                    }
+                    else {
+                      article_edit('edit', $id);
+                    }
                   }
                   else {
                     echo 'edit_id error';
