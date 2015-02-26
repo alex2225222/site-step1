@@ -17,7 +17,7 @@ function user_lasttime() {
   }
 }
 
-function access_user($uid = null) {
+function user_rid($uid = null) {
 
   if (!$uid || !is_numeric($uid)) {
     if (isset($_SESSION['user'])) {
@@ -39,12 +39,16 @@ function access_user($uid = null) {
   return $rid;
 }
 
+function user_access($access_text) {
+  return true;
+}
+
 function user_form($uid = null) {
   user_lasttime();
   $access = gen_access_form();
   $_SESSION['access_form'] = $access;
   if ($uid) {
-    $rid = access_user();
+    $rid = user_rid();
     if (in_array(4, $rid)) {
       echo "<h1>access denied. Your profile is blocked.</h1>";
       return;
@@ -54,10 +58,6 @@ function user_form($uid = null) {
       $sql = "SELECT * FROM users WHERE uid='$uid'";
       $user = $dbh->query($sql)->fetch();
       $_SESSION['user_form'] = $user;
-      if (isset($_SESSION['message'])) {
-        echo "<div class='message'>" . $_SESSION['message'] . '</div>';
-        unset($_SESSION['message']);
-      }
       ?>
       <h1><?php echo t('Edit of profile of user'); ?> "<?php echo $user['login']; ?>"</h1>
       <form name="edit-user" action="user.php" method="post">
@@ -76,7 +76,7 @@ function user_form($uid = null) {
           <?php echo t('Про себе (Ukrainian: about me)'); ?><br/><textarea name="info_ua" rows="3"><?php echo $user['info_ua']; ?></textarea><br/>
           <?php
           if (in_array(3, $rid)) {
-            $user_rid = access_user($uid);
+            $user_rid = user_rid($uid);
             $sql = "SELECT * FROM roles";
             foreach ($dbh->query($sql) as $row) {
               $r = in_array($row['rid'], $user_rid) ? " checked='checked'" : '';
@@ -85,7 +85,7 @@ function user_form($uid = null) {
             }
           }
           ?>
-          <input value="save" name="submit" type="submit" />
+          <input value="<?php echo t('Save'); ?>" name="save" type="submit" />
       </form> 
       <script>
         function SketchFileSelect(evt) {
@@ -112,19 +112,16 @@ function user_form($uid = null) {
     }
   }
   else {
-    if (isset($_SESSION['message'])) {
-      echo "<div class='message'>" . $_SESSION['message'] . '</div>';
-      unset($_SESSION['message']);
-    }
+    echo "<h1>".t('Registration of new user')."</h1>";
     ?>
-    <h1>Registration of new user</h1>
+    
     <form name="create-user" action="user.php" method="post">
         <input type="hidden" name="access" value="<?php echo $access; ?>"/>
         <?php echo t('Login'); ?><input name="login" type="text" /><br/>
         <?php echo t('Password'); ?><input name="pass" type="password" /><br/>
         <?php echo t('Repeat'); ?><input name="repeat" type="password" onchange="pass_repeat(this.form)"/><br/>
         E-mail<input name="mail" type="email" /><br/>
-        <input value="add" name="submit" type="submit" />
+        <input value="<?php echo t('Save'); ?>" name="add" type="submit" />
     </form>  
     <?php
   }
@@ -143,7 +140,7 @@ function user_form($uid = null) {
 function user_page($uid) {
   user_lasttime();
   if ($uid) {
-    $rid = access_user();
+    $rid = user_rid();
     if (in_array(4, $rid)) {
       echo "<h1>" . t('access denied. Your profile is blocked.') . "</h1>";
       return;
@@ -179,6 +176,32 @@ function user_page($uid) {
     else {
       echo "<h1>access denied</h1>";
     }
+  }
+}
+
+function l($text, $options = null) {
+  $gets = array();
+  if ($options) {
+    foreach ($options as $key => $value) {
+      $gets[] = "$key=$value";
+    }
+  }
+  $gets = $gets ? '?' . implode('&', $gets) : '';
+  return '<a href="index.php' . $gets . '">' . $text . '</a>';
+}
+
+function user_list() {
+  if (user_access('user_list')) {
+    include 'config.php';
+    $sql = "SELECT * FROM users";
+    echo '<table class="users">';
+    echo "<tr><th>" . t('Login') . "</th><th>" . t('E-mail') . "</th><th>" . t('Name') . "</th><th>" . t('Surname') . "</th><th>" . t('Operation') . "</th></tr>";
+    foreach ($dbh->query($sql) as $row) {
+      $ed = l(t('Edit'),array('user'=>$row['uid'],'op'=>'edit'));
+      $del ="<a href='delete.php?id=".$row['uid']."&type=user'>delete</a>";// l(t('Delete'),array('user'=>$row['uid'],'op'=>'delete'));
+      echo "<tr><td>" . $row['login'] . "</td><td>" . $row['mail'] . "</td><td>" . $row['name'] . "</td><td>" . $row['lastname'] . "</td><td>" . $ed . '/' . $del . "</td></tr>";
+    }
+    echo '</table>';
   }
 }
 
@@ -415,7 +438,7 @@ function article_view($id, $lang, $teaser = false) {
         . '<input value="' . t('bad') . '" name="bad" type="submit" />' . '-' . $article['lkdown'] . "</form></div>";
     if (isset($_SESSION['user'])) //prava
       print("<a href='index.php?edit=$id'>edit</a><br/>"
-          . "<a href='delete.php?id=$id'>delete</a>");
+          . "<a href='delete.php?id=$id&type=article'>delete</a>");
   }
   return $output;
 }
@@ -423,6 +446,12 @@ function article_view($id, $lang, $teaser = false) {
 function article_edit($op, $id = null) {
   $access = gen_access_form();
   $_SESSION['access_form'] = $access;
+  if ($op == 'create') {
+    echo '<h1>' . t('Create content') . '</h1>';
+  }
+  else {
+    echo '<h1>' . t('Edit content') . '</h1>';
+  }
   echo '<form name="article" action="article.php" method="post">';
   echo '<input type="hidden" name="access" value="' . $access . '"/>';
   echo '<input type="hidden" name="id" value="' . $id . '"/>';

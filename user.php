@@ -1,7 +1,7 @@
 <?php
 
 session_start();
-if (!((isset($uid) && is_numeric($uid)) || isset($_POST['submit']))) :
+if (!((isset($uid) && is_numeric($uid)) || isset($_POST['save']) || isset($_POST['add']))) :
   header("Location: index.php");
   exit();
 endif;
@@ -41,8 +41,10 @@ else {
   else {
     unset($_SESSION['access_form']);
   }
+//  print_r($_POST);
+//  exit;
   include 'config.php';
-  if ((!isset($_SESSION['user']) || in_array(3, $_SESSION['user']['rid'])) && isset($_POST['submit']) && $_POST['submit'] == 'add') {
+  if ((!isset($_SESSION['user']) || in_array(3, $_SESSION['user']['rid'])) && isset($_POST['add'])) {
     $login = var_user('login', $_POST['login'], true);
     if (empty($login)) {
       $_SESSION['message']=t('error login');
@@ -93,7 +95,7 @@ else {
           'created' => $created,
           'login_time' => $login_time,
         );
-        access_user();
+        user_rid();
       }
       $_SESSION['message']=t('profile saved');
       header("Location: index.php?user=$uid&op=edit");
@@ -105,7 +107,7 @@ else {
     }
   }
 
-  if ((isset($_SESSION['user']) || in_array(3, $_SESSION['user']['rid'])) && isset($_POST['submit']) && $_POST['submit'] == 'save') {
+  if ((isset($_SESSION['user']) || in_array(3, $_SESSION['user']['rid'])) && isset($_POST['save'])) {
     $uid = var_user('id', $_POST['uid']);
 //print_r($_FILES);
 //exit;

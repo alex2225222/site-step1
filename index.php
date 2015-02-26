@@ -38,8 +38,10 @@ include 'user_func.php';
                           echo "<br/><a href='index.php?id=create'>" . t('Create content') . "</a>";
                           echo "<br/><a href='index.php?tr=edit'>" . t('Edit translate') . "</a>";
                         }
-                        if (in_array(3, $_SESSION['user']['rid']))
+                        if (in_array(3, $_SESSION['user']['rid'])) {
                           echo "<br/><a href='index.php?user=0'>" . t('Add of new user') . "</a>";
+                          echo "<br/><a href='index.php?user=all'>" . t('List of users') . "</a>";
+                        }
                       }
                     endif;
                     ?>
@@ -54,6 +56,10 @@ include 'user_func.php';
             </div>
             <div id="content">
                 <?php
+                if (isset($_SESSION['message'])) {
+                  echo "<div class='message'>" . $_SESSION['message'] . '</div>';
+                  unset($_SESSION['message']);
+                }
                 include 'config.php';
                 if (isset($_GET['id'])) {
                   if (is_numeric($_GET['id'])) {
@@ -89,7 +95,8 @@ include 'user_func.php';
                   if (is_numeric($_GET['user'])) {
                     $uid = $_GET['user'];
                     include 'user.php';
-                  }elseif($_GET['user']=='all'){
+                  }
+                  elseif ($_GET['user'] == 'all') {
                     echo user_list();
                   }
                   else {

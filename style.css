@@ -30,7 +30,11 @@ body {
 #site-name{
     margin-left: 250px;
     padding-top: 20px;
+}
+
+#site-name a{
     font-size: 40px;
+    text-decoration: none;
 }
 
 #left {
