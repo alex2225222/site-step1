@@ -63,6 +63,10 @@ body {
     font-style: italic;
     color:  #81DAF5;
 }
+.like{
+    font-size: 10px;
+    margin: 10px;
+}
 
 .more{
     margin-left: 100px;
@@ -92,4 +96,10 @@ body {
 
 #lang input{
     width: 32px;
+}
+
+.message{
+    font-style: italic;
+    color:  #FE2E9A;   
+    background-color:  aquamarine;
 }

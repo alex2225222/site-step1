@@ -45,27 +45,37 @@ else {
   if ((!isset($_SESSION['user']) || in_array(3, $_SESSION['user']['rid'])) && isset($_POST['submit']) && $_POST['submit'] == 'add') {
     $login = var_user('login', $_POST['login'], true);
     if (empty($login)) {
+      $_SESSION['message']=t('error login');
       header("Location: index.php?user=0");
       exit;
     }
-    if ($login == '_')
+    if ($login == '_'){
       unset($login);
+      $_SESSION['message']=t('repeat login');
+    }
+      
     if ($_POST['pass'] != $_POST['repeat']) {
+      $_SESSION['message']=t('repeat != pass');
       header("Location: index.php?user=0");
       exit;
     }
     $pass = var_user('pass', $_POST['pass']);
     if (empty($pass)) {
+      $_SESSION['message']=t('error pass');
       header("Location: index.php?user=0");
       exit;
     }
     $mail = var_user('mail', $_POST['mail'], true);
     if (empty($mail)) {
+      $_SESSION['message']=t('error email');
       header("Location: index.php?user=0");
       exit;
     }
-    if ($mail == '_')
+    if ($mail == '_'){
       unset($mail);
+      $_SESSION['message']=t('repeat email');
+    }
+      
 
     if ($login && $mail) {
       $created = $login_time = time();
@@ -85,6 +95,7 @@ else {
         );
         access_user();
       }
+      $_SESSION['message']=t('profile saved');
       header("Location: index.php?user=$uid&op=edit");
       exit;
     }
@@ -93,13 +104,7 @@ else {
       exit;
     }
   }
-//print_r($_POST);
-//echo '<br>';
-//echo '<br>';
-////print_r($_SESSION);
-  //phpinfo();
-//print_r($_FILES);
-//exit;
+
   if ((isset($_SESSION['user']) || in_array(3, $_SESSION['user']['rid'])) && isset($_POST['submit']) && $_POST['submit'] == 'save') {
     $uid = var_user('id', $_POST['uid']);
 //print_r($_FILES);
@@ -115,11 +120,13 @@ else {
     if ($login != $_SESSION['user_form']['login']) {
       $login = var_user('login', $_POST['login'], true);
       if (empty($login)) {
+        $_SESSION['message']=t('error login');
         header("Location: index.php?user=$uid");
         exit;
       }
       if ($login == '_') {
         unset($login);
+        $_SESSION['message']=t('repeat login');
       }
       else {
         $sql_add[] = 'login=?';
@@ -129,11 +136,13 @@ else {
 
     if ($_POST['pass']) {
       if ($_POST['pass'] != $_POST['repeat']) {
+        $_SESSION['message']=t('repeat !=  pass');
         header("Location: index.php?user=$uid");
         exit;
       }
       $pass = var_user('pass', $_POST['pass']);
       if (empty($pass)) {
+        $_SESSION['message']=t('error pass');
         header("Location: index.php?user=$uid");
         exit;
       }
@@ -146,10 +155,12 @@ else {
     if ($mail != $_SESSION['user_form']['mail']) {
       $mail = var_user('mail', $_POST['mail'], true);
       if (empty($mail)) {
+        $_SESSION['message']=t('error mail');
         header("Location: index.php?user=$uid");
         exit;
       }
       if ($mail == '_') {
+        $_SESSION['message']=t('repeat mail');
         unset($mail);
       }
       else {
@@ -164,6 +175,7 @@ else {
       if ($_POST[$value]) {
         $name = var_user($value, $_POST[$value]);
         if (empty($name)) {
+          $_SESSION['message']=t('error '.$value);
           header("Location: index.php?user=$uid");
           exit;
         }

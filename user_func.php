@@ -42,6 +42,10 @@ function user_form($uid = null) {
       $sql = "SELECT * FROM users WHERE uid='$uid'";
       $user = $dbh->query($sql)->fetch();
       $_SESSION['user_form'] = $user;
+      if (isset($_SESSION['message'])) {
+        echo "<div class='message'>" . $_SESSION['message'] . '</div>';
+        unset($_SESSION['message']);
+      }
       ?>
       <h1><?php echo t('Edit of profile of user'); ?> "<?php echo $user['login']; ?>"</h1>
       <form name="edit-user" action="user.php" method="post">
@@ -96,6 +100,10 @@ function user_form($uid = null) {
     }
   }
   else {
+    if (isset($_SESSION['message'])) {
+      echo "<div class='message'>" . $_SESSION['message'] . '</div>';
+      unset($_SESSION['message']);
+    }
     ?>
     <h1>Registration of new user</h1>
     <form name="create-user" action="user.php" method="post">
@@ -270,12 +278,12 @@ function load_field_view($type, $id, $lang, $teaser = array('field' => 'body', '
     }
   }
   if ($teaser && isset($type_array[$teaser['field']])) {
-    if (strlen($type_array[$teaser['field']])>$teaser['max']){
+    if (strlen($type_array[$teaser['field']]) > $teaser['max']) {
       $type_array['teaser'] = substr($type_array[$teaser['field']], 0, $teaser['max']) . '....';
-    }else{
+    }
+    else {
       $type_array['teaser'] = $type_array[$teaser['field']];
     }
-    
   }
   return $type_array;
 }
@@ -329,7 +337,7 @@ function save_article($post) {
   unset($_SESSION['article']);
   include_once 'config.php';
   if ($article) {
-    $id = (integer)$article['id'];
+    $id = (integer) $article['id'];
     foreach ($article['fields'] as $lang => $value) {
       if (empty($post['title_' . $lang]) || empty($post['lang_' . $lang]) || empty($post['body' . $lang])) {
         
@@ -393,7 +401,8 @@ function load_article_view($id, $lang) {
     'lang' => $lang,
     'autor' => $article['user'],
     'created' => $article['created'],
-    'lk' => $article['lk'],
+    'lkup' => $article['lkup'],
+    'lkdown' => $article['lkdown'],
     'fields' => $fields,
   );
   return $article_full;
@@ -410,14 +419,20 @@ function article_view($id, $lang, $teaser = false) {
         . "<div class='autor'>{$article['autor']}</div>"
         . "<div class='date'>$created</div>"
         . "<div class='contetnt-text'>{$article['fields']['teaser']}</div>"
-        . "<div class='more'><a href='index.php?id=$id'>" . t('Read More') . "</a></div></div><hr/>";
+        . "<div class='like'>" . t('good') . '-' . $article['lkup'] . ', ' . t('bad') . '-' . $article['lkdown'] . "</div>"
+        . "<div class='more'><a href='index.php?id=$id'>" . t('Read More') . "</a></div>"
+        . "</div><hr/>";
   }
   else {
     $created = date('d.m.Y', $article['created']);
     $output .="<h1>{$article['fields']['title']}</h1>"
         . "<div class='autor'>{$article['autor']}</div>"
         . "<div class='date'>$created</div>"
-        . "<div class='contetnt-text'>{$article['fields']['body']}</div>";
+        . "<div class='contetnt-text'>{$article['fields']['body']}</div>"
+        . "<div class='like'><form name='like' action='like.php' method='post'>"
+        . "<input type='hidden' name='id' value='" . $id . "'/>"
+        . '<input value="' . t('good') . '" name="good" type="submit" /> ' . $article['lkup'] . ', '
+        . '<input value="' . t('bad') . '" name="bad" type="submit" />' . '-' . $article['lkdown'] . "</form></div>";
     if (isset($_SESSION['user'])) //prava
       print("<a href='index.php?edit=$id'>edit</a><br/>"
           . "<a href='delete.php?id=$id'>delete</a>");
