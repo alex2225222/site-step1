@@ -126,7 +126,7 @@ function user_page($uid) {
   if ($uid) {
     $rid = access_user();
     if (in_array(4, $rid)) {
-      echo "<h1>".t('access denied. Your profile is blocked.')."</h1>";
+      echo "<h1>" . t('access denied. Your profile is blocked.') . "</h1>";
       return;
     }
     if ($uid == $_SESSION['user']['uid'] || in_array(3, $rid)) {
@@ -148,31 +148,43 @@ function user_page($uid) {
       </div>
       <p>
           <label for="name"><b><?php echo $lang['name']; ?>:</b></label>
-          <?php if (iconv_strlen($user['name'], 'UTF-8') > 17) echo '</p><p align="right">';
-          echo $user['name']; ?>
+          <?php
+          if (iconv_strlen($user['name'], 'UTF-8') > 17)
+            echo '</p><p align="right">';
+          echo $user['name'];
+          ?>
       </p>
       <p>
           <label for="sname"><b><?php echo $lang['sname']; ?>:</b></label>
-          <?php if (iconv_strlen($user['sname'], 'UTF-8') > 17) echo '</p><p align="right">';
-          echo ' ' . $user['sname']; ?>
+          <?php
+          if (iconv_strlen($user['sname'], 'UTF-8') > 17)
+            echo '</p><p align="right">';
+          echo ' ' . $user['sname'];
+          ?>
       </p>
       <p>
           <label for="city"><b><?php echo $lang['city']; ?>:</b></label>
-      <?php if (iconv_strlen($user['city'], 'UTF-8') > 17) echo '</p><p align="right">';
-      echo $user['city']; ?>
+          <?php
+          if (iconv_strlen($user['city'], 'UTF-8') > 17)
+            echo '</p><p align="right">';
+          echo $user['city'];
+          ?>
       </p> 
       <p>
           <label for="mail"><b><?php echo $lang['mail']; ?>:</b></label>
-      <?php if (iconv_strlen($user['mail'], 'UTF-8') > 17) echo '</p><p align="right">';
-      echo $user['mail']; ?>
+          <?php
+          if (iconv_strlen($user['mail'], 'UTF-8') > 17)
+            echo '</p><p align="right">';
+          echo $user['mail'];
+          ?>
       </p>
       <p>
           <label for="mail"><b><?php echo $lang['created']; ?>:</b></label>
-      <?php echo date("d-m-Y H:i", $user['created']); ?>
+          <?php echo date("d-m-Y H:i", $user['created']); ?>
       </p>
       <p>
           <label for="mail"><b><?php echo $lang['access']; ?>:</b></label>
-      <?php echo date("d-m-Y H:i", $user['access']); ?>
+          <?php echo date("d-m-Y H:i", $user['access']); ?>
       </p>     
       <?php
     }
@@ -225,8 +237,8 @@ function var_user($type, $data, $op = false) {
 }
 
 function t($string, $lang = null) {
-  if(empty($lang)){
-    $lang = isset($_SESSION['lang'])? $_SESSION['lang'] : 'en';
+  if (empty($lang)) {
+    $lang = isset($_SESSION['lang']) ? $_SESSION['lang'] : 'en';
   }
   if ($lang == 'en')
     return $string;
@@ -242,6 +254,130 @@ function t($string, $lang = null) {
 }
 
 function tt() {
-    $lang = isset($_SESSION['lang'])? $_SESSION['lang'] : 'en';
-    return $lang;
+  $lang = isset($_SESSION['lang']) ? $_SESSION['lang'] : 'en';
+  return $lang;
+}
+
+function load_field_view($type, $id, $lang, $teaser = true, $sovpad = false) {
+  include 'config.php';
+  $type_array = array();
+  $sql = "SELECT * FROM fields WHERE type='$type' and id_type='$id'";
+  if ($sovpad)
+    $sql .= " and lang='$lang'";
+  foreach ($dbh->query($sql) as $row) {
+    if (!isset($type_array[$row['field']]) || $row['lang'] == $lang) {
+      $type_array[$row['field']] = $row['text'];
+    }
+  }
+  if ($teaser && isset($type_array[$teaser['field']])) {
+    $type_array['teaser'] = substr($teaser['field'], 0, $teaser['max']);
+  }
+  return $type_array;
+}
+
+function load_field_edit($type, $id, $lang = null) {
+  include 'config.php';
+  $type_array = array();
+  $sql = "SELECT * FROM fields WHERE type='$type' and id_type='$id'";
+  if ($sovpad)
+    $sql .= " and lang='$lang'";
+  foreach ($dbh->query($sql) as $row) {
+    $type_array[$row['lang']][$row['field']] = array(
+      'text' => $row['text'],
+      'id' => $row['id'],
+      'field' => $row['field'],
+      'lang' => $row['lang'],
+    );
+  }
+  return $type_array;
+}
+
+function save_field($type, $id, $type_array) {
+  include 'config.php';
+  foreach ($type_array as $value) {
+    if (isset($value['id'])) {
+      $sth = $dbh->prepare('UPDATE fields SET lang=?,text=? WHERE id=?');
+      $sth->execute(array($value['lang'], $value['text'], $value['id']));
+    }
+    else {
+      $sth = $dbh->prepare('INSERT INTO fields SET type=?,id_type=?,lang=?,field=?,text=?');
+      $sth->execute(array($type, $id, $value['lang'], $value['field'], $value['text']));
+    }
+  }
+}
+
+function load_article_view($id, $lang) {
+  include 'config.php';
+  $sql = "SELECT * FROM article WHERE id=$id";
+  $article = $dbh->query($sql)->fetch();
+  $fields = load_field_view('article', $id, $lang);
+  $article_full = array(
+    'id' => $id,
+    'lang' => $lang,
+    'autor' => $article['user'],
+    'created' => $article['created'],
+    'lk' => $article['lk'],
+    'fields' => $fields,
+  );
+  return $article_full;
+}
+
+function article_view($id, $lang, $teaser = false) {
+  $article = load_article_view($id, $lang);
+  $output = '';
+  if ($teaser) {
+    $created = date('d.m.Y', $article['created']);
+    $output .= "<div class='block-teaser'><h1><a href='index.php?id=$id'>{$article['fields']['title']}</a></h1>"
+        . "<div class='autor'>{$article['user']}</div>"
+        . "<div class='date'>$created</div>"
+        . "<div class='contetnt-text'>{$article['fields']['teaser']}</div>"
+        . "<div class='more'><a href='index.php?id=$id'>" . t('Read More') . "</a></div></div><hr/>";
+  }
+  else {
+    $created = date('d.m.Y', $article['created']);
+    $output .="<h1>{$article['fields']['title']}</h1>"
+        . "<div class='autor'>{$article['user']}</div>"
+        . "<div class='date'>$created</div>"
+        . "<div class='contetnt-text'>{$article['fields']['body']}</div>";
+    if (isset($_SESSION['user'])) //prava
+      print("<a href='index.php?edit=$id'>edit</a><br/>"
+          . "<a href='delete.php?id=$id'>delete</a>");
+  }
+  return $output;
+}
+
+function article_edit($op, $id = null) {
+  $access = gen_access_form();
+  $_SESSION['access_form'] = $access;
+  echo '<form name="article" action="article.php" method="post">';
+  echo '<input type="hidden" name="access" value="' . $access . '"/>';
+  echo '<input type="hidden" name="id" value="' . $id . '"/>';
+  switch ($op) {
+    case 'edit':case 'add_lang':
+      if (is_numeric($id)) {
+        include 'config.php';
+        $sql = "SELECT * FROM article WHERE id=$id";
+        $article = $dbh->query($sql)->fetch();
+        $fields = load_field_edit('article', $id);
+        $_SESSION['fields'] = array('id' => $id, 'fields' => $fields);
+        foreach ($fields as $key => $value) {
+          echo '<div class="lang-article">';
+          echo t('Title') . '<input name="title_' . $key . '" type="text"  value="' . $value['title']['text'] . '"/><br/>';
+          echo t('Lang') . '<input name="lang_' . $key . '" type="text"  value="' . $key . '"/><br/>';
+          echo t('Body') . '<textarea name="body_' . $key . '" rows="8">' . $value['body']['text'] . '</textarea><hr/></div>';
+        }
+      }
+      if ($op == 'edit')
+        break;
+    case 'create':
+      echo '<div class="add-lang">';
+      echo t('Title') . '<input name="title_new" type="text" /><br/>';
+      echo t('Lang') . '<input name="lang_new" type="text" /><br/>';
+      echo t('Body') . '<textarea name="body_new" rows="8"></textarea></div>';
+      break;
+    default:
+      break;
+  }
+  echo '<input value="'.t('Add lang').'" name="add_lang" type="submit" />';
+  echo '<input value="'.t('save').'" name="submit" type="submit" /></form>';
 }

@@ -59,18 +59,10 @@ include 'user_func.php';
                 if (isset($_GET['id'])) {
                   if (is_numeric($_GET['id'])) {
                     $id = $_GET['id'];
-                    $sql = "SELECT * FROM article WHERE id='$id'";
-                    foreach ($dbh->query($sql) as $row) {
-                      $created = date('d.m.Y', $row['created']);
-                      print("<h1>{$row['title']}</h1>"
-                          . "<div class='autor'>{$row['user']}</div>"
-                          . "<div class='date'>$created</div>"
-                          . "<div class='contetnt-text'>{$row['body']}</div>");
-                      if (isset($_SESSION['user']))
-                        print("<a href='index.php?edit=$id'>edit</a><br/>"
-                            . "<a href='delete.php?id=$id'>delete</a>");
-                    }
-                  } elseif ($_GET['id'] == 'create' && isset($_SESSION['user'])) {
+                    $lang = tt();
+                    echo article_view($id, $lang);
+                  }
+                  elseif ($_GET['id'] == 'create' && isset($_SESSION['user'])) {
                     // print_r($_SESSION);
                     include 'create.php';
                   }
@@ -108,14 +100,9 @@ include 'user_func.php';
                   endif;
                   $id_min = ($page - 1) * $pager_limit;
                   $sql = "SELECT SQL_CALC_FOUND_ROWS * FROM article WHERE id > $id_min LIMIT $pager_limit";
+                  $lang = tt();
                   foreach ($dbh->query($sql) as $row) {
-                    $created = date('d.m.Y', $row['created']);
-                    $body = strlen($row['body']) < 6 ? $row['body'] : substr($row['body'], 0, 6) . '...';
-                    print("<div class='block-teaser'><h1><a href='index.php?id={$row['id']}'>{$row['title']}</a></h1>"
-                        . "<div class='autor'>{$row['user']}</div>"
-                        . "<div class='date'>$created</div>"
-                        . "<div class='contetnt-text'>$body</div>"
-                        . "<div class='more'><a href='index.php?id={$row['id']}'>" . t('Read More') . "</a></div></div><hr/>");
+                    echo article_view($row['id'], $lang, true);
                   }
                   $sql = "SELECT FOUND_ROWS()";
                   $count_article = $dbh->query($sql)->fetchColumn();
