@@ -186,20 +186,20 @@ else {
         $sql_array[] = $name;
       }
     }
- //   print_r($_POST);
-    if (isset($_POST['rid1'])) {
+
+    if (isset($_POST['roles'])) {
       include_once 'config.php';
       $sql = "DELETE FROM users_roles WHERE uid = '$uid'";
       $count = $dbh->exec($sql);
       for ($x = 1; $x <= 4; $x++) {
-        if (isset($_POST['rid' . $x])) {
+        if (isset($_POST['rid' . $x]) || $x == 1) {
           $sth = $dbh->prepare('INSERT INTO users_roles SET uid=?,rid=?');
           $sth->execute(array($uid, $x));
         }
       }
     }
 //    print_r($_FILES);
-  //  exit;
+    //  exit;
     if ($_FILES['fupload']['name']) {
 
       include ("avatar.php");

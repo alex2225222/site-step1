@@ -1,16 +1,19 @@
 <?php
+include 'config.php';
 
 function gen_access_form() {
-  include 'config.php';
+  global $self;
+
   $access = md5(time()) . substr($self, 25, 5);
   return $access;
 }
 
 function user_lasttime() {
+  global $dbh;
+
   if (isset($_SESSION['user'])) {
     $uid = $_SESSION['user']['uid'];
     $created = time();
-    include 'config.php';
     $sth = $dbh->prepare('UPDATE users SET login_time=? WHERE uid=?');
     $sth->execute(array($created, $uid));
     $_SESSION['user']['login_time'] = $created;
@@ -20,9 +23,9 @@ function user_lasttime() {
 function user_rid($uid = null) {
   $edit_session = false;
   if (!$uid || !is_numeric($uid)) {
-    if (isset($_SESSION['user'])) {
+    if (!empty($_SESSION['user'])) {
       $uid = $_SESSION['user']['uid'];
-      if (isset($_SESSION['user']['rid']) && !empty($_SESSION['user']['rid'])) {
+      if (!empty($_SESSION['user']['rid'])) {
         return $_SESSION['user']['rid'];
       }
       else {
@@ -33,7 +36,7 @@ function user_rid($uid = null) {
       return false;
     }
   }
-  include 'config.php';
+  global $dbh;
   $sql = "SELECT rid FROM users_roles WHERE uid='$uid'";
   $rid = array();
   foreach ($dbh->query($sql) as $row) {
@@ -64,7 +67,7 @@ function user_form($uid = null) {
   $_SESSION['access_form'] = $access;
   if ($uid) {
     $rid = user_rid();
-    if (in_array(4, $rid)) {
+    if (in_array(BLOCKED_USER, $rid)) {
       echo "<h1>access denied. Your profile is blocked.</h1>";
       return;
     }
@@ -76,7 +79,7 @@ function user_form($uid = null) {
       ?>
       <h1><?php echo t('Edit of profile of user'); ?> "<?php echo $user['login']; ?>"</h1>
       <form name="edit-user" action="user.php" method="post">
-          <div class="avatar"><img id="ava" src="img/avatars/<?php echo $user['avatar'] ? : 'avatar.jpeg'; ?>" width="130px" height="110px" />
+          <div class="avatar"><img id="ava" src="img/avatars/<?php echo $user['avatar'] ? : 'avatar.jpeg'; ?>" width="130" height="110" />
               <p align="center"><label for="avatar_label" id="photo"><?php echo t('add photo'); ?></label></p>
               <input name="fupload" id="fupload" class="fld" type="file"></div>
           <input type="hidden" name="access" value="<?php echo $access; ?>"/>
@@ -95,9 +98,10 @@ function user_form($uid = null) {
             $sql = "SELECT * FROM roles";
             foreach ($dbh->query($sql) as $row) {
               $r = in_array($row['rid'], $user_rid) ? " checked='checked'" : '';
-              $u = $row['rid'] == 1 ? ' readonly' : '';
-              echo "<label><input type='checkbox' name='rid{$row['rid']}'$r$u/>{$row['roles']}</label><br/>";
+              $u = $row['rid'] == 1 ? ' disabled' : '';
+              echo "<input type='checkbox' name='rid{$row['rid']}'$r$u/><label>{$row['roles']}</label><br/>";
             }
+            echo '<input type="hidden" name="roles" value="1"/>';
           }
           ?>
           <input value="<?php echo t('Save'); ?>" name="save" type="submit" />
@@ -145,7 +149,7 @@ function user_form($uid = null) {
     function pass_repeat(form) {
         if (form.pass.value != form.repeat.value) {
             form.repeat.value = '';
-            alert("<?php echo 'password != repeat'; ?>");
+            alert("<?php echo t('password != repeat'); ?>");
         }
     }
   </script>
@@ -195,19 +199,13 @@ function user_page($uid) {
 }
 
 function l($text, $options = null) {
-  $gets = array();
-  if ($options) {
-    foreach ($options as $key => $value) {
-      $gets[] = "$key=$value";
-    }
-  }
-  $gets = $gets ? '?' . implode('&', $gets) : '';
+  $gets = $options ? '?' . http_build_query($options) : '';
   return '<a href="index.php' . $gets . '">' . $text . '</a>';
 }
 
 function user_list() {
-  if (user_access('user_list')) {
-    include 'config.php';
+  if (user_access(9)) {
+    global $dbh;
     $sql = "SELECT * FROM users";
     echo '<table class="users">';
     echo "<tr><th>" . t('Login') . "</th><th>" . t('E-mail') . "</th><th>" . t('Name') . "</th><th>" . t('Surname') . "</th><th>" . t('Operation') . "</th></tr>";
@@ -235,6 +233,10 @@ function var_user($type, $data, $op = false) {
   switch ($type) {
     case 'login':
       if ($op) {
+        if (!preg_match('#^[a-zA-Z]\w{3,15}$#sU', $data)) {
+          $_SESSION['message'] = t('Error login: 3-15 symbols; first - a-z,A-Z; other - a-z,A-Z, 0-9, _');
+          return '_';
+        }
         $sql = "SELECT login FROM users WHERE login='$data'";
         if ($dbh->query($sql)->fetchColumn())
           return '_';
@@ -251,6 +253,12 @@ function var_user($type, $data, $op = false) {
       break;
     case 'pass':
       $data = crypt($data, $self);
+      if ($op) {
+        if (!preg_match('#^\.{3,15}$#sU', $data)) {
+          $_SESSION['message'] = t('error password: 3-15 symbols');
+          return false;
+        }
+      }
       break;
     case 'id':
       if (!is_numeric($data))
@@ -390,7 +398,7 @@ function save_article($post) {
       }
       $created = time();
       $user = $_SESSION['user']['login'];
-      $sth = $dbh->prepare('INSERT INTO article SET user=?,created=?,lk=0');
+      $sth = $dbh->prepare('INSERT INTO article SET user=?,created=?,lkup=0,lkdown=0,vot_users=0,vot_sum=0');
       $sth->execute(array($user, $created));
       $id = $dbh->lastInsertId();
       $field_array = array('title', 'body');
@@ -426,11 +434,12 @@ function article_view($id, $lang, $teaser = false) {
   if (empty($article))
     return false;
   $output = '';
+  $rat = article_rating($id);
   if ($teaser) {
     $created = date('d.m.Y', $article['created']);
     $output .= "<div class='block-teaser'><h1><a href='index.php?id=$id'>{$article['fields']['title']}</a></h1>"
         . "<div class='autor'>{$article['autor']}</div>"
-        . "<div class='date'>$created</div>"
+        . "<div class='date'>$created</div>".$rat
         . "<div class='contetnt-text'>{$article['fields']['teaser']}</div>"
         . "<div class='like'>" . t('good') . '-' . $article['lkup'] . ', ' . t('bad') . '-' . $article['lkdown'] . "</div>"
         . "<div class='more'><a href='index.php?id=$id'>" . t('Read More') . "</a></div>"
@@ -445,7 +454,7 @@ function article_view($id, $lang, $teaser = false) {
         . "<div class='like'><form name='like' action='like.php' method='post'>"
         . "<input type='hidden' name='id' value='" . $id . "'/>"
         . '<input value="' . t('good') . '" name="good" type="submit" /> ' . $article['lkup'] . ', '
-        . '<input value="' . t('bad') . '" name="bad" type="submit" />' . '-' . $article['lkdown'] . "</form></div>";
+        . '<input value="' . t('bad') . '" name="bad" type="submit" />' . '-' . $article['lkdown'] . "</form></div>".$rat;
     if (isset($_SESSION['user'])) //prava
       print("<a href='index.php?edit=$id'>edit</a><br/>"
           . "<a href='delete.php?id=$id&type=article'>delete</a>");
@@ -518,8 +527,9 @@ function comments_load($aid) {
   $output = '<h2>' . t('Comments') . '</h2>';
   if (is_numeric($aid)) {
     include 'config.php';
+    $lang = tt();
     $perm_comments = user_access(6);
-    $sql = "SELECT * FROM comments WHERE id_article='$aid'";
+    $sql = "SELECT * FROM comments WHERE id_article='$aid' and lang='$lang'";
     foreach ($dbh->query($sql) as $row) {
       $output .= comment_render($row, $perm_comments);
     }
@@ -544,7 +554,7 @@ function comment_render($row, $permission = false) {
 function comment_load($id) {
   if (is_numeric($id)) {
     $lang = tt();
-    include 'config.php';
+    global $dbh;
     $sql = "SELECT * FROM comments WHERE cid='$id'";
     $comment = $dbh->query($sql)->fetch();
     return $comment;
@@ -556,12 +566,12 @@ function comment_form($aid, $id = null) {
   $access = gen_access_form();
   $_SESSION['access_form'] = $access;
   $com = is_numeric($id) ? comment_load($id) : array();
-  if ($com){
+  if ($com) {
     $_SESSION['comment'] = $com;
-  if(user_access(6))  
-    $del = "<a href='delete.php?id={$com['cid']}&type=comment'>delete</a>";
+    if (user_access(6))
+      $del = "<a href='delete.php?id={$com['cid']}&type=comment'>delete</a>";
   }
-    
+
   $lang = tt();
   //print_r($);
   $theme = isset($com['theme']) ? '  value="' . $com['theme'] . '"' : '';
@@ -574,8 +584,9 @@ function comment_form($aid, $id = null) {
       . t('Theme') . '<input name="theme" type="text"' . $theme . '"/><br/>'
       . t('Body') . '<textarea name="body" rows="8">' . $body . '</textarea>'
       . '<input value="' . t('Save') . '" name="save" type="submit" /></form>';
-  
-  if(isset($del)) $output .= $del;
+
+  if (isset($del))
+    $output .= $del;
 
   return $output;
 }
@@ -616,6 +627,124 @@ function comment_save($post) {
     $sth = $dbh->prepare('INSERT comments SET theme=?,body=?,created=?,user=?,lang=?,id_article=?');
     $sth->execute(array($theme, $body, $created, $user, $lang, $id_article));
     $id = $dbh->lastInsertId();
+    if (isset($_SESSION['comments'])) {
+      $_SESSION['comments'][$id] = $id;
+    }
     return array('cid' => $id, 'aid' => $id_article);
+  }
+}
+
+function user_permission() {
+  
+}
+
+function user_permission_save($post) {
+  
+}
+
+function article_rating($aid) {
+    global $dbh;
+    $sql = "SELECT vot_users, vot_sum FROM article WHERE id='$aid'";
+    $rating = $dbh->query($sql)->fetch(); 
+    if (empty($rating['vot_users'])){
+      $output = '<div class="rating">'. t('No rating'). '</div>';
+    }else{
+      $output = '<div class="rating">'. t('voice').' '.$rating['vot_users']. ', ' . t('avegete'). ' '.round($rating['vot_sum']/$rating['vot_users'],1). '</div>';
+    }
+    return $output;
+}
+
+function article_like_views_rat($aid) {
+  if (!isset($_SESSION['user']) || !is_numeric($aid))
+    return '';
+  $uid = $_SESSION['user']['uid'];
+  global $dbh;
+  $sql = "SELECT rating FROM ratings_articles WHERE aid='$aid' and uid='$uid'";
+  $rating = $dbh->query($sql)->fetchColumn();
+  if ($rating) {
+    $output = t('Your grade of article - ') . $rating
+        . "<div class='rating'><form name='rating' action='like.php' method='post'>"
+        . "<input type='hidden' name='aid' value='" . $aid . "'/>"
+        . '<input value="' . t('Delete rating') . '" name="delete" type="submit" /></form></div>';
+    return $output;
+  }
+  else {
+    $output = '<div class="rating-empty">' . t('Rate this article') . '<form name="ratform" action="like.php" method="post">'
+        . '<input type="hidden" name="aid" value="' . $aid . '"/>'
+        . '<input type="hidden" name="uid" value="' . $uid . '"/>'
+        . '<input type="radio" name="rat" value="1">1'
+        . '<input type="radio" name="rat" value="2">2'
+        . '<input type="radio" name="rat" value="3">3'
+        . '<input type="radio" name="rat" value="4">4'
+        . '<input type="radio" name="rat" value="5">5'
+        . '<input value="' . t('Rating') . '" name="rating" type="submit" /></form></div>';
+    return $output;
+  }
+}
+
+function article_add_rating($post) {
+  $uid = var_user('id', $_POST['uid']);
+  $aid = var_user('id', $_POST['aid']);
+  $rat = var_user('id', $_POST['rat']);
+  if ($uid && $aid && $rat) {
+    global $dbh;
+    $sth = $dbh->prepare('INSERT ratings_articles SET uid=?,aid=?,rating=?');
+    $sth->execute(array($uid, $aid, $rat));
+    $sql = "SELECT vot_users, vot_sum FROM article WHERE id='$aid'";
+    $rating = $dbh->query($sql)->fetch();
+    $sum = $rat + (integer) $rating['vot_sum'];
+    $users = 1 + (integer) $rating['vot_users'];
+    $sth = $dbh->prepare('UPDATE article SET vot_users=?,vot_sum=? WHERE id=?');
+    $sth->execute(array($users, $sum, $aid));
+  }
+}
+
+function article_delete_rating($post) {
+  $aid = var_user('id', $_POST['aid']);
+  if ($aid) { 
+    $uid = $_SESSION['user']['uid'];
+    global $dbh;
+    $sql = "SELECT rating FROM ratings_articles WHERE aid='$aid' and uid='$uid'";
+    $rat = $dbh->query($sql)->fetchColumn();
+
+    $sql = "SELECT vot_users, vot_sum FROM article WHERE id='$aid'";
+    $rating = $dbh->query($sql)->fetch();
+    $sum = (integer) $rating['vot_sum'] - $rat;
+    $users = (integer) $rating['vot_users'] - 1;
+
+    $sth = $dbh->prepare('UPDATE article SET vot_users=?,vot_sum=? WHERE id=?');
+    $sth->execute(array($users, $sum, $aid));
+
+    $sql = "DELETE FROM ratings_articles WHERE aid='$aid' and uid='$uid'";
+    $count = $dbh->exec($sql);
+  }
+}
+
+function article_add_like($id, $op) {
+  if (is_numeric($id)) {
+    if (!isset($_SESSION['like']))
+      $_SESSION['like'] = array();
+    if (!in_array($id, $_SESSION['like'])) {
+      global $dbh;
+      switch ($op) {
+        case 'up':
+          $sql = "SELECT lkup FROM article WHERE id=$id";
+          $var = $dbh->query($sql)->fetchColumn();
+          $var = (integer) $var + 1;
+          $sth = $dbh->prepare('UPDATE article SET lkup=? WHERE id=?');
+          $sth->execute(array($var, $id));
+          break;
+        case 'down':
+          $sql = "SELECT lkdown FROM article WHERE id=$id";
+          $var = $dbh->query($sql)->fetchColumn();
+          $var = (integer) $var + 1;
+          $sth = $dbh->prepare('UPDATE article SET lkdown=? WHERE id=?');
+          $sth->execute(array($var, $id));
+          break;
+        default:
+          break;
+      }
+      $_SESSION['like'][] = $id;
+    }
   }
 }

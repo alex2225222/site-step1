@@ -16,9 +16,9 @@ else {
   unset($_SESSION['access_form']);
 }
 if (isset($_POST['save'])) {
-  $info = comment_save($_POST);
-  header("Location: index.php?id={$info['aid']}");
-  exit();
+  $info = user_permission_save($_POST);
+//  header("Location: index.php?id={$info['aid']}");
+//  exit();    
 }
 header("Location: index.php");
 exit();

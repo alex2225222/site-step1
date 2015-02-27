@@ -9,6 +9,7 @@ if (isset($_SESSION['user']) && isset($_POST['submit']) && $_POST['submit'] == '
 endif;
 
 include 'user_func.php';
+include 'config.php';
 if (!isset($_SESSION['user']) && isset($_POST['submit']) && $_POST['submit'] == 'signin') {
   if (isset($_POST['login'])) {
     $login = var_user('login', $_POST['login']);
@@ -32,12 +33,11 @@ if (!isset($_SESSION['user']) && isset($_POST['submit']) && $_POST['submit'] == 
     exit();
   }
 
-    include 'config.php';
+
     $sql = "SELECT * FROM users WHERE login='$login'";
     foreach ($dbh->query($sql) as $row) {
       if ($pass == $row['password']) {
         $_SESSION['user'] = $row;
-        
         user_rid();
         header("Location: index.php");
         exit();

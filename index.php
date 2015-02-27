@@ -34,11 +34,11 @@ include 'user_func.php';
                         echo "<h1>" . t('You profile is blocked') . "</h1>";
                       }
                       else {
-                        if (user_access(1)){//(in_array(2, $_SESSION['user']['rid']) || in_array(3, $_SESSION['user']['rid'])) {
+                        if (user_access(1)) {
                           echo "<br/><a href='index.php?id=create'>" . t('Create content') . "</a>";
                           echo "<br/><a href='index.php?tr=edit'>" . t('Edit translate') . "</a>";
                         }
-                        if (user_access(4)){//(in_array(3, $_SESSION['user']['rid'])) {
+                        if (user_access(4)) {
                           echo "<br/><a href='index.php?user=0'>" . t('Add of new user') . "</a>";
                           echo "<br/><a href='index.php?user=all'>" . t('List of users') . "</a>";
                         }
@@ -68,6 +68,7 @@ include 'user_func.php';
 
                     if ($article = article_view($id, $lang)) {
                       echo $article;
+                      echo article_like_views_rat($id);
                       echo comments_load($id);
                     }
                   }
@@ -109,7 +110,12 @@ include 'user_func.php';
                 }
                 elseif ($_GET['comment']) {
                   if (is_numeric($_GET['comment']) && $_GET['op'] == 'edit' && is_numeric($_GET['aid'])) {
-                    echo comment_form($_GET['aid'], $_GET['comment']);
+                    if (isset($_SESSION['comments'][$_GET['comment']]) || user_access(6)) {
+                      echo comment_form($_GET['aid'], $_GET['comment']);
+                    }
+                    else {
+                      echo "<h1>access blocked</h1>";
+                    }
                   }
                   elseif ($_GET['comment'] == 'create' && is_numeric($_GET['aid'])) {
                     echo comment_form($_GET['aid']);

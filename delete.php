@@ -36,11 +36,6 @@ else {
       exit();
     endif;
     delete_id($_POST['type'], $id);
-//    include 'config.php';
-//    $sql = "DELETE FROM fields WHERE type='article' and id_type = '$id'";
-//    $count = $dbh->exec($sql);
-//    $sql = "DELETE FROM article WHERE id = '$id'";
-//    $count = $dbh->exec($sql);
   endif;
   header("Location: index.php");
   exit();
@@ -62,7 +57,7 @@ function delete_id($type, $id) {
       $_SESSION['message'] = t('User ' . $id . ' deleted');
       break;
     case 'comment':
-      $sql = "DELETE FROM cooments WHERE cid = '$id'";
+      $sql = "DELETE FROM comments WHERE cid = '$id'";
       $count = $dbh->exec($sql);
       $_SESSION['message'] = t('Comment ' . $id . ' deleted');
       break;
