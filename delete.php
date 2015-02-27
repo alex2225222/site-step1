@@ -61,6 +61,11 @@ function delete_id($type, $id) {
       $count = $dbh->exec($sql);
       $_SESSION['message'] = t('User ' . $id . ' deleted');
       break;
+    case 'comment':
+      $sql = "DELETE FROM cooments WHERE cid = '$id'";
+      $count = $dbh->exec($sql);
+      $_SESSION['message'] = t('Comment ' . $id . ' deleted');
+      break;
     default:
       break;
   }

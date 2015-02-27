@@ -545,8 +545,8 @@ function comment_load($id) {
   if (is_numeric($id)) {
     $lang = tt();
     include 'config.php';
-    $sql = "SELECT * FROM comments WHERE cid='$aid' and lang='$lang'";
-    $comment = $dbh->query($sql)->fetch;
+    $sql = "SELECT * FROM comments WHERE cid='$id'";
+    $comment = $dbh->query($sql)->fetch();
     return $comment;
   }
   return false;
@@ -556,12 +556,16 @@ function comment_form($aid, $id = null) {
   $access = gen_access_form();
   $_SESSION['access_form'] = $access;
   $com = is_numeric($id) ? comment_load($id) : array();
-  if ($com)
+  if ($com){
     $_SESSION['comment'] = $com;
+  if(user_access(6))  
+    $del = "<a href='delete.php?id={$com['cid']}&type=comment'>delete</a>";
+  }
+    
   $lang = tt();
   //print_r($);
   $theme = isset($com['theme']) ? '  value="' . $com['theme'] . '"' : '';
-  $body = isset($com['body']) ? '  value="' . $com['body'] . '"' : '';
+  $body = isset($com['body']) ? $com['body'] : '';
   $id = $id ? '<input type="hidden" name="id" value="' . $id . '"/>' : '';
   $output = '<form name="comment" action="comment.php" method="post">'
       . '<input type="hidden" name="access" value="' . $access . '"/>'
@@ -570,6 +574,8 @@ function comment_form($aid, $id = null) {
       . t('Theme') . '<input name="theme" type="text"' . $theme . '"/><br/>'
       . t('Body') . '<textarea name="body" rows="8">' . $body . '</textarea>'
       . '<input value="' . t('Save') . '" name="save" type="submit" /></form>';
+  
+  if(isset($del)) $output .= $del;
 
   return $output;
 }
@@ -579,7 +585,7 @@ function comment_save($post) {
   unset($_SESSION['comment']);
   include_once 'config.php';
   if ($com) {
-    if (!($com['theme'] == $post('theme') && $com['body'] == $post['body']) && $post['body']) {
+    if (!($com['theme'] == $post['theme'] && $com['body'] == $post['body']) && $post['body']) {
       $theme = var_user('theme', $post['theme']);
       $body = var_user('body', $post['body']);
       if (empty($body))
