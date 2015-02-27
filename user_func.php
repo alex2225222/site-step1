@@ -44,8 +44,18 @@ function user_rid($uid = null) {
   return $rid;
 }
 
-function user_access($access_text) {
-  return true;
+function user_access($pid) {
+  if (($rid = user_rid()) && is_integer($pid)) {
+    include 'config.php';
+    $in = str_repeat('?,', count($rid) - 1) . '?';
+    $sql = "SELECT * FROM roles_perm WHERE rid IN ($in) and pid=$pid";
+    $stm = $dbh->prepare($sql);
+    $stm->execute($rid);
+    $data = $stm->fetchAll();
+    if ($data)
+      return true;
+  }
+  return false;
 }
 
 function user_form($uid = null) {
@@ -123,7 +133,7 @@ function user_form($uid = null) {
     <form name="create-user" action="user.php" method="post">
         <input type="hidden" name="access" value="<?php echo $access; ?>"/>
         <?php echo t('Login'); ?><input name="login" type="text" /><br/>
-    <?php echo t('Password'); ?><input name="pass" type="password" /><br/>
+        <?php echo t('Password'); ?><input name="pass" type="password" /><br/>
     <?php echo t('Repeat'); ?><input name="repeat" type="password" onchange="pass_repeat(this.form)"/><br/>
         E-mail<input name="mail" type="email" /><br/>
         <input value="<?php echo t('Save'); ?>" name="add" type="submit" />
@@ -286,12 +296,7 @@ function load_field_view($type, $id, $lang, $teaser = array('field' => 'body', '
     }
   }
   if ($teaser && isset($type_array[$teaser['field']])) {
-    if (strlen($type_array[$teaser['field']]) > $teaser['max']) {
-      $type_array['teaser'] = substr($type_array[$teaser['field']], 0, $teaser['max']) . '....';
-    }
-    else {
-      $type_array['teaser'] = $type_array[$teaser['field']];
-    }
+    $type_array['teaser'] = text_short($type_array[$teaser['field']], $teaser['max']);
   }
   return $type_array;
 }
@@ -488,4 +493,121 @@ function article_edit($op, $id = null) {
   }
   echo '<input value="' . t('Add lang') . '" name="add_lang" type="submit" />';
   echo '<input value="' . t('Save') . '" name="save" type="submit" /></form>';
+}
+
+function text_short($text, $max) {
+  $count = iconv_strlen($text, 'UTF-8');
+  if ($count > $max) {
+    if ($max > 10) {
+      $space = mb_strpos($text, ' ', $max - 10);
+      if ($space) {
+        $text = mb_substr($text, 0, $space) . '....';
+      }
+      else {
+        $text = mb_substr($text, 0, $max) . '....';
+      }
+    }
+    else {
+      $text = mb_substr($text, 0, $max) . '....';
+    }
+  }
+  return $text;
+}
+
+function comments_load($aid) {
+  $output = '<h2>' . t('Comments') . '</h2>';
+  if (is_numeric($aid)) {
+    include 'config.php';
+    $sql = "SELECT * FROM comments WHERE id_article='$aid'";
+    foreach ($dbh->query($sql) as $row) {
+      $output .= comment_render($row);
+    }
+  }
+  if (isset($_SESSION['user']))
+    $output .= '<a href="index.php?comment=create&aid=' . $aid . '">' . t('Add comment') . '</a>';
+  return $output;
+}
+
+function comment_render($row, $permission = false) {
+  $row['theme'] = empty($row['theme']) ? text_short($row['body'], 15) : $row['theme'];
+  $created = date('d.m.Y', $row['created']);
+  $output = "<div class='comment'><h3>{$row['theme']}</h3>"
+      . "<div class='autor'>{$row['user']}</div>"
+      . "<div class='date'>$created</div>"
+      . "<div class='comment-text'>{$row['body']}</div>"
+      . "</div><hr/>";
+  return $output;
+}
+
+function comment_load($id) {
+  if (is_numeric($id)) {
+    $lang = tt();
+    include 'config.php';
+    $sql = "SELECT * FROM comments WHERE cid='$aid' and lang='$lang'";
+    $comment = $dbh->query($sql)->fetch;
+    return $comment;
+  }
+  return false;
+}
+
+function comment_form($aid, $id = null) {
+  $access = gen_access_form();
+  $_SESSION['access_form'] = $access;
+  $com = is_numeric($id) ? comment_load($id) : array();
+  if ($com)
+    $_SESSION['comment'] = $com;
+  $lang = tt();
+  //print_r($);
+  $theme = isset($com['theme']) ? '  value="' . $com['theme'] . '"' : '';
+  $body = isset($com['body']) ? '  value="' . $com['body'] . '"' : '';
+  $id = $id ? '<input type="hidden" name="id" value="' . $id . '"/>' : '';
+  $output = '<form name="comment" action="comment.php" method="post">'
+      . '<input type="hidden" name="access" value="' . $access . '"/>'
+      . $id . '<input type="hidden" name="aid" value="' . $aid . '"/>'
+      . '<input type="lang" name="lang" value="' . $lang . '"/>'
+      . t('Theme') . '<input name="theme" type="text"' . $theme . '"/><br/>'
+      . t('Body') . '<textarea name="body" rows="8">' . $body . '</textarea>'
+      . '<input value="' . t('Save') . '" name="save" type="submit" /></form>';
+
+  return $output;
+}
+
+function comment_save($post) {
+  $com = isset($_SESSION['comment']) ? $_SESSION['comment'] : '';
+  unset($_SESSION['comment']);
+  include_once 'config.php';
+  if ($com) {
+    if (!($com['theme'] == $post('theme') && $com['body'] == $post['body']) && $post['body']) {
+      $theme = var_user('theme', $post['theme']);
+      $body = var_user('body', $post['body']);
+      if (empty($body))
+        return false;
+      if ($_SESSION['user']['login'] == $com['user']) {
+        $created = time();
+      }
+      else {
+        $created = $com['created'];
+      }
+      $sth = $dbh->prepare('UPDATE comments SET theme=?,body=?,created=? WHERE cid=?');
+      $sth->execute(array($theme, $body, $created, $com['cid']));
+      return array('cid' => $com['cid'], 'aid' => $com['id_article']);
+    }
+    else {
+      return array('cid' => $com['cid'], 'aid' => $com['id_article']);
+    }
+  }
+  else {
+    $theme = var_user('theme', $post['theme']);
+    $body = var_user('body', $post['body']);
+    if (empty($body))
+      return false;
+    $id_article = var_user('id', $post['aid']);
+    $user = $_SESSION['user']['login'];
+    $created = time();
+    $lang = var_user('lang', $post['lang']);
+    $sth = $dbh->prepare('INSERT comments SET theme=?,body=?,created=?,user=?,lang=?,id_article=?');
+    $sth->execute(array($theme, $body, $created, $user, $lang, $id_article));
+    $id = $dbh->lastInsertId();
+    return array('cid' => $id, 'aid' => $id_article);
+  }
 }

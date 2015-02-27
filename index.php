@@ -34,11 +34,11 @@ include 'user_func.php';
                         echo "<h1>" . t('You profile is blocked') . "</h1>";
                       }
                       else {
-                        if (in_array(2, $_SESSION['user']['rid']) || in_array(3, $_SESSION['user']['rid'])) {
+                        if (user_access(1)){//(in_array(2, $_SESSION['user']['rid']) || in_array(3, $_SESSION['user']['rid'])) {
                           echo "<br/><a href='index.php?id=create'>" . t('Create content') . "</a>";
                           echo "<br/><a href='index.php?tr=edit'>" . t('Edit translate') . "</a>";
                         }
-                        if (in_array(3, $_SESSION['user']['rid'])) {
+                        if (user_access(4)){//(in_array(3, $_SESSION['user']['rid'])) {
                           echo "<br/><a href='index.php?user=0'>" . t('Add of new user') . "</a>";
                           echo "<br/><a href='index.php?user=all'>" . t('List of users') . "</a>";
                         }
@@ -68,6 +68,7 @@ include 'user_func.php';
 
                     if ($article = article_view($id, $lang)) {
                       echo $article;
+                      echo comments_load($id);
                     }
                   }
                   elseif ($_GET['id'] == 'create' && isset($_SESSION['user'])) {
@@ -101,6 +102,20 @@ include 'user_func.php';
                   }
                   else {
                     echo 'user_id error';
+                  }
+                }
+                elseif ($_GET['tr']) {
+                  include 'translate.php';
+                }
+                elseif ($_GET['comment']) {
+                  if (is_numeric($_GET['comment']) && $_GET['op'] == 'edit' && is_numeric($_GET['aid'])) {
+                    echo comment_form($_GET['aid'], $_GET['comment']);
+                  }
+                  elseif ($_GET['comment'] == 'create' && is_numeric($_GET['aid'])) {
+                    echo comment_form($_GET['aid']);
+                  }
+                  else {
+                    echo 'comment_info error';
                   }
                 }
                 elseif ($_GET['tr']) {

@@ -1,38 +1,23 @@
 <?php
-include 'user_func.php';
+session_start();
+if (!isset($_SESSION['user'])) :
+  header("Location: index.php");
+  exit();
+endif;
+include_once 'user_func.php';
 
-function comments_load($aid) {
-  $output = '';
-  if (is_numeric($id)) {
-    include 'config.php';
-    $sql = "SELECT * FROM comments WHERE id_article='$aid'";
-    foreach ($dbh->query($sql) as $row) {
-      $output .= comments_render($row);
-    }
-  }
-  return $output;
+$access = isset($_POST['access']) ? $_POST['access'] : '';
+if (empty($access) || $access != $_SESSION['access_form']) {
+  header("Location: index.php");
+  exit;
 }
-
-function comment_load($id) {
-  if (is_numeric($id)) {
-    $lang = tt();
-    include 'config.php';
-    $sql = "SELECT * FROM comments WHERE cid='$aid' and lang='$lang'";
-    $comment = $dbh->query($sql)->fetch;
-    return $comment;
-  }
-  return false;
+else {
+  unset($_SESSION['access_form']);
 }
-
-function comment_form($id = null) {
-    $access = gen_access_form();
-  $_SESSION['access_form'] = $access;
-  $com = is_numeric($id) ? comment_load($id) : '';
-  $output = '<form name="comment" action="comment.php" method="post">'
-      . '<input type="hidden" name="access" value="' . $access . '"/>'
-      . '<input type="hidden" name="id" value="' . $id?:'new' . '"/>'
-      . t('Theme') . '<input name="theme" type="text"' . isset($com['theme'])?'  value="'.$com['theme'].'"':'' . '"/><br/>'
-      . t('Body') . '<textarea name="body" rows="8">' . isset($com['body'])?'  value="'.$com['body'].'"':'' . '</textarea>'
-      . '<input value="' . t('Save') . '" name="save" type="submit" /></form>';
-  
+if (isset($_POST['save'])){
+  $info = comment_save($_POST);
+  header("Location: index.php?id={$info['aid']}");
+  exit();    
 }
+header("Location: index.php");
+exit();session_start();
