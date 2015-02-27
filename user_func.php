@@ -134,7 +134,7 @@ function user_form($uid = null) {
         <input type="hidden" name="access" value="<?php echo $access; ?>"/>
         <?php echo t('Login'); ?><input name="login" type="text" /><br/>
         <?php echo t('Password'); ?><input name="pass" type="password" /><br/>
-    <?php echo t('Repeat'); ?><input name="repeat" type="password" onchange="pass_repeat(this.form)"/><br/>
+        <?php echo t('Repeat'); ?><input name="repeat" type="password" onchange="pass_repeat(this.form)"/><br/>
         E-mail<input name="mail" type="email" /><br/>
         <input value="<?php echo t('Save'); ?>" name="add" type="submit" />
     </form>  
@@ -518,9 +518,10 @@ function comments_load($aid) {
   $output = '<h2>' . t('Comments') . '</h2>';
   if (is_numeric($aid)) {
     include 'config.php';
+    $perm_comments = user_access(6);
     $sql = "SELECT * FROM comments WHERE id_article='$aid'";
     foreach ($dbh->query($sql) as $row) {
-      $output .= comment_render($row);
+      $output .= comment_render($row, $perm_comments);
     }
   }
   if (isset($_SESSION['user']))
@@ -531,11 +532,12 @@ function comments_load($aid) {
 function comment_render($row, $permission = false) {
   $row['theme'] = empty($row['theme']) ? text_short($row['body'], 15) : $row['theme'];
   $created = date('d.m.Y', $row['created']);
+  $edit = $permission ? "<div class='link'>" . l(t('Edit'), array('comment' => $row['cid'], 'op' => 'edit', 'aid' => $row['id_article'])) . "</div>" : '';
   $output = "<div class='comment'><h3>{$row['theme']}</h3>"
       . "<div class='autor'>{$row['user']}</div>"
       . "<div class='date'>$created</div>"
       . "<div class='comment-text'>{$row['body']}</div>"
-      . "</div><hr/>";
+      . $edit . "</div><hr/>";
   return $output;
 }
 
