@@ -3,6 +3,7 @@
 session_start();
 
 include 'user_func.php';
+include 'config.php';
 
 if (isset($_POST['good'])) {
   $id = $_POST['id'];

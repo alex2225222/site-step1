@@ -1,7 +1,7 @@
 <?php
 
 session_start();
-if (isset($_SESSION['user']) && isset($_POST['submit']) && $_POST['submit'] == 'signout') :
+if (isset($_SESSION['user']) && isset($_POST['submit_x'])) :
   unset($_SESSION['user']);
   session_destroy();
   header("Location: index.php");

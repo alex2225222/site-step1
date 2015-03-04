@@ -6,6 +6,7 @@ if (!isset($_SESSION['user'])) :
   exit();
 endif;
 include_once 'user_func.php';
+include 'config.php';
 
 $access = isset($_POST['access']) ? $_POST['access'] : '';
 if (empty($access) || $access != $_SESSION['access_form']) {
@@ -16,9 +17,9 @@ else {
   unset($_SESSION['access_form']);
 }
 if (isset($_POST['save'])) {
-  $info = user_permission_save($_POST);
-//  header("Location: index.php?id={$info['aid']}");
-//  exit();    
+  user_permission_save($_POST);
+  header("Location: index.php?perms=edit");
+  exit();    
 }
 header("Location: index.php");
 exit();

@@ -1,161 +1,95 @@
 <?php
 session_start();
+
 include 'user_func.php';
+include 'config.php';
+
+$lang = tt();
 ?>
-<!doctype html>
-<html><head>
-        <meta charset="utf-8">
-        <title><?php echo t('Home'); ?></title>
-        <link type="text/css" rel="stylesheet" href="style.css">
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+        <title><?php echo t('Test my site about trucks'); ?></title>
+        <link href="style.css" rel="stylesheet" type="text/css" />
     </head>
     <body>
-        <div id="site">
-            <div id="top">
-                <img src="logo.jpeg"/>
-                <div id="site-name"><a href="index.php"><?php echo t('Site of car'); ?></a></div>
-            </div>
-            <div id="left">
-                <div id="login">
-                    <?php if (!isset($_SESSION['user'])) : ?>
-                      <form name="authrization" action="us.php" method="post">
-                          <?php echo t('Login'); ?><input name="login" type="text" />
-                          <?php echo t('Password'); ?><input name="pass" type="password" />
-                          <input value="signin" name="submit" type="submit" />
-                          <a href='index.php?user=0'><?php echo t('Registration'); ?></a>
-                      </form>
-                    <?php else : ?>
-                      <div id="login-yes"><?php echo t('Hi user'); ?> "<?php echo $_SESSION['user']['login']; ?>"</div>
-                      <form name="log-out" action="us.php" method="post">
-                          <input value="signout" name="submit" type="submit" />
-                      </form>
-                      <a href='index.php?user=<?php echo $_SESSION['user']['uid']; ?>'><?php echo t('My profile'); ?></a>
-                      <?php
-                      if (in_array(4, $_SESSION['user']['rid'])) {
-                        echo "<h1>" . t('You profile is blocked') . "</h1>";
-                      }
-                      else {
-                        if (user_access(1)) {
-                          echo "<br/><a href='index.php?id=create'>" . t('Create content') . "</a>";
-                          echo "<br/><a href='index.php?tr=edit'>" . t('Edit translate') . "</a>";
-                        }
-                        if (user_access(4)) {
-                          echo "<br/><a href='index.php?user=0'>" . t('Add of new user') . "</a>";
-                          echo "<br/><a href='index.php?user=all'>" . t('List of users') . "</a>";
-                        }
-                      }
-                    endif;
-                    ?>
+        <div id="page">
+            <div id="wrapper">
+                <header id="branding">
+                    <h1 id="site-title"> 
+                        <a href="index.php" title="Home"><?php echo t('Site about trucks'); ?></a> 
+                    </h1>
+                    <div class="social">
+                        <div class="widget_search">
+                            <form method="get" class="search-form">
+                                <input type="submit" value="Search" class="search-submit-button" />
+                                <input type="text" value="Search" onfocus="this.value = ''" onblur="this.value = 'Search'" name="s" class="search-text-box" />
+                            </form> 
+                        </div>
+                        <ul>
+                            <li><a href="#" target="_blank"><img src="img/icon-rss.png" alt="RSS" /></a></li>
+                            <li><a href="#" target="_blank"><img src="img/icon-facebook.png" alt="Facebook" /></a></li>
+                            <li><a href="#" target="_blank"><img src="img/icon-twitter.png" alt="Twitter" /></a></li>
+                            <li><a href="#" target="_blank"><img src="img/icon-dribbble.png" alt="Dribbble" /></a></li>
+                            <li><a href="#" target="_blank"><img src="img/icon-linkedin.png" alt="LinkedIn" /></a></li>
+                            <li><a href="#" target="_blank"><img src="img/icon-pinterest.png" alt="Pinterest" /></a></li>
+                        </ul>
+                    </div>
+                    <nav id="main-nav" class="main-mav">
+                        <div id="menu" class="menu">
+                            <ul id="tiny">
+                                <li><a href="index.php">Home</a></li>
+                                <li><a href="index.php?st=2">About</a></li>
+                                <li><a href="index.php?st=3">Contact</a></li>
+                            </ul>
+                        </div>
+                        <div id="user" class="menu">
+                            <?php if (isset($_SESSION['user'])) : ?>
+                              <div id="hi"><p><?php echo t('Hi user') . ' "' . $_SESSION['user']['login']; ?>"</p></div>
+                              <div id="ultiny">
+                                  <ul id="tiny">
+                                      <li><a href="index.php?user=<?php echo $_SESSION['user']['uid']; ?>"><?php echo t('My profile'); ?></a></li>
+                                  </ul>
+                              </div>
+                              <form name="log-out" action="us.php" method="post">
+                                  <input type="image" src="img/logout.png" name="submit" value="<?php echo t('signout'); ?>">
+                              </form>
+                            <?php endif; ?>
+                            <div id="lang">
+                                <form name="lang" action="lang.php" method="post">
+                                    <input type="image" src="img/ua.png" name="ua" value="ua"/>
+                                    <input type="image" src="img/en.png" name="en" value="en"/>
+                                </form>    
+                            </div>
+                        </div>
+                        <div class="triangle-l"></div>
+                        <div class="triangle-r"></div>
+                    </nav>
+                    <div id="aphorism-block"><img src="img/avtopark.jpg"  class="avtopark"/>
+                        <div class="avtopark-text"><div class="aforizm-text"><?php echo static_page_view(1, $lang); ?></div></div>
+                    </div>
+                </header>
+                <div id="main-nav-line" class="add-aphorism-block">
+                    <div class="triangle-l triangle-add-l"></div>
+                    <div class="triangle-r triangle-add-r"></div>              
                 </div>
-                <div id="lang">
-                    <form name="lang" action="lang.php" method="post">
-                        <input type="image" src="img/ua.png" name="ua" value="ua">
-                        <input type="image" src="img/en.png" name="en" value="en">
-                    </form>    
+                <div id="main-block">
+                    <div class="sitebar">
+                        <?php echo menu_created(); ?>
+                    </div>                
+                    <div class="content">
+                        <?php echo page_created(); ?>
+                    </div>                
 
                 </div>
-            </div>
-            <div id="content">
-                <?php
-                if (isset($_SESSION['message'])) {
-                  echo "<div class='message'>" . $_SESSION['message'] . '</div>';
-                  unset($_SESSION['message']);
-                }
-                include 'config.php';
-                if (isset($_GET['id'])) {
-                  if (is_numeric($_GET['id'])) {
-                    $id = $_GET['id'];
-                    $lang = tt();
-
-                    if ($article = article_view($id, $lang)) {
-                      echo $article;
-                      echo article_like_views_rat($id);
-                      echo comments_load($id);
-                    }
-                  }
-                  elseif ($_GET['id'] == 'create' && isset($_SESSION['user'])) {
-                    article_edit('create');
-                  }
-                  else {
-                    echo 'id error';
-                  }
-                }
-                elseif ($_GET['edit']) {
-                  if (is_numeric($_GET['edit'])) {
-                    $id = $_GET['edit'];
-                    if (isset($_GET['add_field'])) {
-                      article_edit('add_lang', $id);
-                    }
-                    else {
-                      article_edit('edit', $id);
-                    }
-                  }
-                  else {
-                    echo 'edit_id error';
-                  }
-                }
-                elseif ($_GET['user'] || is_numeric($_GET['user'])) {
-                  if (is_numeric($_GET['user'])) {
-                    $uid = $_GET['user'];
-                    include 'user.php';
-                  }
-                  elseif ($_GET['user'] == 'all') {
-                    echo user_list();
-                  }
-                  else {
-                    echo 'user_id error';
-                  }
-                }
-                elseif ($_GET['tr']) {
-                  include 'translate.php';
-                }
-                elseif ($_GET['comment']) {
-                  if (is_numeric($_GET['comment']) && $_GET['op'] == 'edit' && is_numeric($_GET['aid'])) {
-                    if (isset($_SESSION['comments'][$_GET['comment']]) || user_access(6)) {
-                      echo comment_form($_GET['aid'], $_GET['comment']);
-                    }
-                    else {
-                      echo "<h1>access blocked</h1>";
-                    }
-                  }
-                  elseif ($_GET['comment'] == 'create' && is_numeric($_GET['aid'])) {
-                    echo comment_form($_GET['aid']);
-                  }
-                  else {
-                    echo 'comment_info error';
-                  }
-                }
-                elseif ($_GET['tr']) {
-                  include 'translate.php';
-                }
-                else {
-                  $pager_limit = 5;
-                  if (isset($_GET['page']) && is_numeric($_GET['page'])):
-                    $page = $_GET['page'];
-                  else:
-                    $page = 1;
-                  endif;
-                  $id_min = ($page - 1) * $pager_limit;
-                  $sql = "SELECT SQL_CALC_FOUND_ROWS * FROM article WHERE id > $id_min LIMIT $pager_limit";
-                  $lang = tt();
-                  foreach ($dbh->query($sql) as $row) {
-                    echo article_view($row['id'], $lang, true);
-                  }
-                  $sql = "SELECT FOUND_ROWS()";
-                  $count_article = $dbh->query($sql)->fetchColumn();
-                  $page_all = round(($count_article + $id_min) / $pager_limit);
-
-                  //echo "page_all - $page_all, count_article - $count_article,  id_min - $id_min <br/>";
-                  if ($page_all > 1) {
-                    echo '<br/>';
-                    for ($x = 0; $x++ < $page_all;) {
-                      if ($x == $page) : echo $x . ' ';
-                      else: echo "<a href='index.php?page=$x'>$x</a> ";
-                      endif;
-                    }
-                  }
-                }
-                $dbh = null;
-                ?>  
+                <div id="main-nav-line">
+                    <div class="triangle-l triangle-add-l"></div>
+                    <div class="triangle-r triangle-add-r"></div>
+                </div>
+                <div id="footer">
+                    <?php echo t('My code'); ?>
+                </div>
             </div>
         </div>
     </body>

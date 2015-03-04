@@ -1,11 +1,172 @@
 <?php
-include 'config.php';
+
+function menu_created() {
+  if (!isset($_SESSION['user'])) {
+    $output = '<div class="login-form"><form name="authrization" action="us.php" method="post"><div>' . t('Login')
+        . '</div><div><input name="login" type="text" /></div><div>' . t('Password')
+        . '</div><div><input name="pass" type="password" /></div><div><input value="signin" name="submit" type="submit" /></div>'
+        . '<div><a href="index.php?user=0">' . t('Registration') . '</a></div></form></div>';
+  }
+  elseif (in_array(4, $_SESSION['user']['rid'])) {
+    $output = '<h3>' . t('You profile is blocked') . '</h1>';
+  }
+  else {
+    $output = '';
+    if (user_access(2))
+      $output .= '<li><a href="index.php?id=create">' . t('Create content') . '</a></li>';
+    if (user_access(7))
+      $output .= '<li><a href="index.php?tr=edit">' . t('Edit translate') . '</a></li>';
+    if (user_access(4))
+      $output .= '<li><a href="index.php?user=0">' . t('Add of new user') . '</a></li>';
+    if (user_access(9))
+      $output .= '<li><a href="index.php?user=all">' . t('List of users') . '</a></li>';
+    if (user_access(11))
+      $output .= '<li><a href="index.php?st=all">' . t('List of static page') . '</a></li>';
+    if (user_access(8))
+      $output .= '<li><a href="index.php?perms=edit">' . t('Edit permissions') . '</a></li>';
+    if ($output) {
+      $output = '<h3>' . t('Menu') . '</h3><ul>' . $output . '</ul>';
+    }
+  }
+  return $output;
+}
+
+function page_created() {
+  if (isset($_SESSION['message'])) {
+    echo "<div class='message'>" . $_SESSION['message'] . '</div>';
+    unset($_SESSION['message']);
+  }
+  include 'config.php';
+
+  if (isset($_GET['id'])) {
+    if (is_numeric($_GET['id'])) {
+      $id = $_GET['id'];
+      $lang = tt();
+
+      if ($article = article_view($id, $lang)) {
+        echo $article;
+        echo comments_load($id);
+      }
+    }
+    elseif ($_GET['id'] == 'create' && isset($_SESSION['user'])) {
+      article_edit('create');
+    }
+    else {
+      echo 'id error';
+    }
+  }
+  elseif ($_GET['edit']) {
+    if (is_numeric($_GET['edit'])) {
+      $id = $_GET['edit'];
+      if (isset($_GET['add_field'])) {
+        article_edit('add_lang', $id);
+      }
+      else {
+        article_edit('edit', $id);
+      }
+    }
+    else {
+      echo 'edit_id error';
+    }
+  }
+  elseif ($_GET['st']) {
+    if (is_numeric($_GET['st'])) {
+      $id = $_GET['st'];
+      if (isset($_GET['op'])) {
+        $op = $_GET['op'];
+        static_page_edit($op, $id);
+      }
+      else {
+        $lang = tt();
+        echo static_page_view($id, $lang);
+      }
+    }
+    elseif (user_access(11)) {
+      echo static_page_list();
+    }
+    else {
+      echo 'st_id error';
+    }
+  }
+  elseif ($_GET['user'] || is_numeric($_GET['user'])) {
+    if (is_numeric($_GET['user'])) {
+      $uid = $_GET['user'];
+      include 'user.php';
+    }
+    elseif ($_GET['user'] == 'all') {
+      echo user_list();
+    }
+    else {
+      echo 'user_id error';
+    }
+  }
+  elseif ($_GET['tr']) {
+    include 'translate.php';
+  }
+  elseif ($_GET['perms']) {
+    echo user_permission();
+  }
+  elseif ($_GET['comment']) {
+    if (is_numeric($_GET['comment']) && $_GET['op'] == 'edit' && is_numeric($_GET['aid'])) {
+      if (isset($_SESSION['comments'][$_GET['comment']]) || user_access(6)) {
+        echo comment_form($_GET['aid'], $_GET['comment']);
+      }
+      else {
+        echo "<h1>access blocked</h1>";
+      }
+    }
+    elseif ($_GET['comment'] == 'create' && is_numeric($_GET['aid'])) {
+      echo comment_form($_GET['aid']);
+    }
+    else {
+      echo 'comment_info error';
+    }
+  }
+  elseif ($_GET['tr']) {
+    include 'translate.php';
+  }
+  else {
+    $pager_limit = 4;
+    if (isset($_GET['page']) && is_numeric($_GET['page'])):
+      $page = $_GET['page'];
+    else:
+      $page = 1;
+    endif;
+    $id_min = ($page - 1) * $pager_limit;
+    $sql = "SELECT SQL_CALC_FOUND_ROWS * FROM article LIMIT $id_min, $pager_limit";
+    $lang = tt();
+    foreach ($dbh->query($sql) as $row) {
+      echo article_view($row['id'], $lang, true);
+    }
+    $sql = "SELECT FOUND_ROWS()";
+    $count_article = $dbh->query($sql)->fetchColumn();
+    $page_all = round(($count_article + 1) / $pager_limit);
+
+    //echo "page_all - $page_all, count_article - $count_article, id_min - $id_min <br/>";
+    if ($page_all > 1) {
+      echo '<div class="pager"><a href="index.php">' . t('First') . ' </a>';
+      for ($x = 0; $x++ < $page_all;) {
+        if ($x == $page) : echo $x . ' ';
+        else: echo "<a href='index.php?page=$x'>$x</a> ";
+        endif;
+      }
+      echo '<a href="index.php?page=' . $page_all . '"> ' . t('Last') . ' </a>';
+      echo '</div>';
+    }
+  }
+}
 
 function gen_access_form() {
   global $self;
-
   $access = md5(time()) . substr($self, 25, 5);
   return $access;
+}
+
+function gen_access_form_add_input() {
+  $access = gen_access_form();
+  $_SESSION['access_form'] = $access;
+  $output = '<input type="hidden" name="access" value="' . $access . '"/>';
+  return $output;
 }
 
 function user_lasttime() {
@@ -49,7 +210,7 @@ function user_rid($uid = null) {
 
 function user_access($pid) {
   if (($rid = user_rid()) && is_integer($pid)) {
-    include 'config.php';
+    global $dbh;
     $in = str_repeat('?,', count($rid) - 1) . '?';
     $sql = "SELECT * FROM roles_perm WHERE rid IN ($in) and pid=$pid";
     $stm = $dbh->prepare($sql);
@@ -63,8 +224,6 @@ function user_access($pid) {
 
 function user_form($uid = null) {
   user_lasttime();
-  $access = gen_access_form();
-  $_SESSION['access_form'] = $access;
   if ($uid) {
     $rid = user_rid();
     if (in_array(BLOCKED_USER, $rid)) {
@@ -72,26 +231,26 @@ function user_form($uid = null) {
       return;
     }
     if ($uid == $_SESSION['user']['uid'] || in_array(3, $rid)) {
-      include 'config.php';
+      global $dbh;
       $sql = "SELECT * FROM users WHERE uid='$uid'";
       $user = $dbh->query($sql)->fetch();
       $_SESSION['user_form'] = $user;
       ?>
       <h1><?php echo t('Edit of profile of user'); ?> "<?php echo $user['login']; ?>"</h1>
-      <form name="edit-user" action="user.php" method="post">
+      <form name="edit-user" action="user.php" method="post" enctype="multipart/form-data">
           <div class="avatar"><img id="ava" src="img/avatars/<?php echo $user['avatar'] ? : 'avatar.jpeg'; ?>" width="130" height="110" />
               <p align="center"><label for="avatar_label" id="photo"><?php echo t('add photo'); ?></label></p>
               <input name="fupload" id="fupload" class="fld" type="file"></div>
-          <input type="hidden" name="access" value="<?php echo $access; ?>"/>
+              <?php echo gen_access_form_add_input(); ?>
           <input type="hidden" name="uid" value="<?php echo $user['uid']; ?>"/>
-          <?php echo t('Login'); ?><input name="login" value="<?php echo $user['login']; ?>" type="text" /><br/>
-          <?php echo t('Password'); ?><input name="pass" type="password" /><br/>
-          <?php echo t('Repeat'); ?><input name="repeat" type="password" onchange="pass_repeat(this.form)"/><br/>
-          <?php echo t('Name'); ?><input name="name" value="<?php echo $user['name']; ?>" type="text" /><br/>
-          <?php echo t('Surname'); ?><input name="lastname" value="<?php echo $user['lastname']; ?>" type="text" /><br/>
-          E-mail<input name="mail" value="<?php echo $user['mail']; ?>" type="email" /><br/>
-          <?php echo t('About me'); ?><br/><textarea name="info_en" rows="3"><?php echo $user['info_en']; ?></textarea><br/>
-          <?php echo t('Про себе (Ukrainian: about me)'); ?><br/><textarea name="info_ua" rows="3"><?php echo $user['info_ua']; ?></textarea><br/>
+          <span class="pre-input"><?php echo t('Login'); ?></span><input name="login" value="<?php echo $user['login']; ?>" type="text" /><br/>
+          <span class="pre-input"><?php echo t('Password'); ?></span><input name="pass" type="password" /><br/>
+          <span class="pre-input"><?php echo t('Repeat'); ?></span><input name="repeat" type="password" onchange="pass_repeat(this.form)"/><br/>
+          <span class="pre-input"><?php echo t('Name'); ?></span><input name="name" value="<?php echo $user['name']; ?>" type="text" /><br/>
+          <span class="pre-input"><?php echo t('Surname'); ?></span><input name="lastname" value="<?php echo $user['lastname']; ?>" type="text" /><br/>
+          <span class="pre-input">E-mail</span><input name="mail" value="<?php echo $user['mail']; ?>" type="email" /><br/>
+          <span class="pre-input"><?php echo t('About me'); ?></span><br/><textarea name="info_en" rows="3"><?php echo $user['info_en']; ?></textarea><br/>
+          <span class="pre-input"><?php echo t('Про себе (Ukrainian: about me)'); ?></span><br/><textarea name="info_ua" rows="3"><?php echo $user['info_ua']; ?></textarea><br/>
           <?php
           if (in_array(3, $rid)) {
             $user_rid = user_rid($uid);
@@ -115,14 +274,14 @@ function user_form($uid = null) {
                 reader.onload = (function (theFile) {
                     return function (e) {
                         document.getElementById('ava').src = e.target.result;
-                        document.getElementById('photo').innerHTML = '<?php echo 'edit photo'; ?>';
+                        document.getElementById('photo').innerHTML = '<?php echo t('edit photo'); ?>';
                         return false;
                     };
                 })(f);
                 reader.readAsDataURL(f);
             }
         }
-        //document.getElementById('fupload').addEventListener('change', SketchFileSelect, false);
+        document.getElementById('fupload').addEventListener('change', SketchFileSelect, false);
       </script>
       <?php
     }
@@ -134,67 +293,90 @@ function user_form($uid = null) {
     echo "<h1>" . t('Registration of new user') . "</h1>";
     ?>
 
-    <form name="create-user" action="user.php" method="post">
-        <input type="hidden" name="access" value="<?php echo $access; ?>"/>
-        <?php echo t('Login'); ?><input name="login" type="text" /><br/>
-        <?php echo t('Password'); ?><input name="pass" type="password" /><br/>
-        <?php echo t('Repeat'); ?><input name="repeat" type="password" onchange="pass_repeat(this.form)"/><br/>
-        E-mail<input name="mail" type="email" /><br/>
+    <form name="create-user" action="user.php" method="post" onsubmit="return checkForm(this)">
+        <?php echo gen_access_form_add_input(); ?>
+        <span class="pre-input"><?php echo t('Login'); ?> </span><input name ="login" type="text" /><br/>
+        <span class="pre-input"><?php echo t('Password'); ?></span><input name="pass" type="password" /><br/>
+        <span class="pre-input"><?php echo t('Repeat'); ?></span><input name="repeat" type="password" onchange="pass_repeat(this.form)"/><br/>
+        <span class="pre-input">E-mail</span><input name="mail" type="email" /><br/>
         <input value="<?php echo t('Save'); ?>" name="add" type="submit" />
-    </form>  
+    </form> 
     <?php
-  }
-  ?>
-  <script type="text/javascript">
-    function pass_repeat(form) {
-        if (form.pass.value != form.repeat.value) {
-            form.repeat.value = '';
-            alert("<?php echo t('password != repeat'); ?>");
-        }
+          print ('<script type="text/javascript">
+  function pass_repeat(form) {
+    if (form.pass.value != form.repeat.value) {
+      form.repeat.value = \'\';
+      alert("' . t('password != repeat') . '");
     }
-  </script>
-  <?php
+  }
+ </script>');
+  print ('<script type="text/javascript">
+  function checkForm(form){
+	var output = [];
+	if (/^[A-Za-z0-9]{3,}$/.test(form.login.value) === false)
+		{output.push(\'' . t('Login') . '\');}
+	if (/^\w{5,25}$/.test(form.pass.value) === false)
+		{output.push(\'' . t('Password') . '\');}
+	if (form.pass.value != form.repeat.value) 
+		{form.repeat.value = \'\'; output.push(\'' . t('error repeat') . '\');}
+	if (/^[\.\-_A-Za-z0-9]+?@[\.\-A-Za-z0-9]+?[\ .A-Za-z0-9]{2,}$/.test(form.mail.value) === false)
+		{output.push(\'Error e-mail\');}
+      alert(output);    
+	if (output.length == 0)
+		{return true;}	
+	else 
+		{alert(\'' . t('Error form') . '\' + output.join(\', \')); return false;}
+}</script>');
+  }
 }
 
 function user_page($uid) {
-  user_lasttime();
   if ($uid) {
     $rid = user_rid();
-    if (in_array(4, $rid)) {
-      echo "<h1>" . t('access denied. Your profile is blocked.') . "</h1>";
-      return;
-    }
-    if ($uid == $_SESSION['user']['uid'] || in_array(3, $rid)) {
-      include 'config.php';
-      $sql = "SELECT * FROM users WHERE uid='$uid'";
-      $user = $dbh->query($sql)->fetch();
-      echo '<h1>' . t('Profile of user') . ' "' . $user['login'] . '"</h1>';
-      echo "<div class='avatar'>";
-      if ($user['avatar']) {
-        echo "<a href='img/original/{$user['avatar']}'><img src='img/avatars/{$user['avatar']}' /></a>";
+    if ($rid) {
+      user_lasttime();
+      if (in_array(4, $rid)) {
+        echo "<h1>" . t('access denied. Your profile is blocked.') . "</h1>";
+        return;
+      }
+      if ($uid == $_SESSION['user']['uid'] || in_array(3, $rid)) {
+        global $dbh;
+        $sql = "SELECT * FROM users WHERE uid='$uid'";
+        $user = $dbh->query($sql)->fetch();
+        echo '<h1>' . t('Profile of user') . ' "' . $user['login'] . '"</h1>';
+        echo "<div class='avatar'>";
+        if ($user['avatar']) {
+          echo "<a href='img/original/{$user['avatar']}'><img src='img/avatars/{$user['avatar']}' /></a>";
+        }
+        else {
+          echo '<img src="img/avatars/avatar.jpeg" width="125" height="110" />';
+        }
+        echo '</div>';
+        echo "<div class='login'><strong>" . t('Login') . ':</strong> ' . $user['login'] . "</div>";
+        echo "<div class='mail'><strong>" . t('E-mail') . ':</strong> ' . $user['mail'] . "</div>";
+        if ($user['name'])
+          echo "<div class='name'><strong>" . t('Name') . ':</strong> ' . $user['name'] . "</div>";
+        if ($user['lastname'])
+          echo "<div class='surname'><strong>" . t('Surname') . ':</strong> ' . $user['lastname'] . "</div>";
+        $created = date('d.m.Y G:i', $user['created']);
+        echo "<div class='date'><strong>" . t('Time created') . ':</strong> ' . $created . "</div>";
+        $login_time = date('d.m.Y G:i', $user['login_time']);
+        echo "<div class='date'><strong>" . t('Last time') . ':</strong> ' . $login_time . "</div>";
+        $lang = tt();
+        if ($user['info_' . $lang])
+          echo "<div class='info'><strong>" . t('Info') . ':</strong> ' . $user['info_' . $lang] . "</div>";
+        echo "<div class='link'><a href='index.php?user=$uid&op=edit'>" . t('Edit profile') . "</a></div>";
       }
       else {
-        echo '<img src="img/avatars/avatar.jpeg" width="125" height="110" />';
+        echo "<h1>access denied</h1>";
       }
-      echo '</div>';
-      echo "<div class='login'>" . t('Login') . ': ' . $user['login'] . "</div>";
-      echo "<div class='mail'>" . t('E-mail') . ': ' . $user['mail'] . "</div>";
-      if ($user['name'])
-        echo "<div class='name'>" . t('Name') . ': ' . $user['name'] . "</div>";
-      if ($user['lastname'])
-        echo "<div class='surname'>" . t('Surname') . ': ' . $user['lastname'] . "</div>";
-      $lang = tt();
-      if ($user['info_' . $lang])
-        echo "<div class='info'>" . t('Info') . ': ' . $user['info_' . $lang] . "</div>";
-      $created = date('d.m.Y G:i', $user['created']);
-      echo "<div class='date'>" . t('Time created') . ': ' . $created . "</div>";
-      $login_time = date('d.m.Y G:i', $user['login_time']);
-      echo "<div class='date'>" . t('Last time') . ': ' . $login_time . "</div>";
-      echo "<div class='link'><a href='index.php?user=$uid&op=edit'>" . t('Edit profile') . "</a></div>";
     }
     else {
       echo "<h1>access denied</h1>";
     }
+  }
+  else {
+    echo "<h1>access denied</h1>";
   }
 }
 
@@ -229,7 +411,7 @@ function var_user($type, $data, $op = false) {
   $data = sec_text($data);
   if (empty($data))
     return false;
-  include 'config.php';
+  global $dbh;
   switch ($type) {
     case 'login':
       if ($op) {
@@ -252,6 +434,7 @@ function var_user($type, $data, $op = false) {
       }
       break;
     case 'pass':
+      global $self;
       $data = crypt($data, $self);
       if ($op) {
         if (!preg_match('#^\.{3,15}$#sU', $data)) {
@@ -276,7 +459,7 @@ function t($string, $lang = null) {
   }
   if ($lang == 'en')
     return $string;
-  include 'config.php';
+  global $dbh;
   $sql = "SELECT transl FROM local WHERE name='$string' and lang='$lang'";
   $translite = $dbh->query($sql)->fetchColumn();
   if ($translite) {
@@ -292,8 +475,8 @@ function tt() {
   return $lang;
 }
 
-function load_field_view($type, $id, $lang, $teaser = array('field' => 'body', 'max' => 12), $sovpad = false) {
-  include 'config.php';
+function load_field_view($type, $id, $lang, $teaser = array('field' => 'body', 'max' => 150), $sovpad = false) {
+  global $dbh;
   $type_array = array();
   $sql = "SELECT * FROM fields WHERE type='$type' and id_type='$id'";
   if ($sovpad)
@@ -310,7 +493,7 @@ function load_field_view($type, $id, $lang, $teaser = array('field' => 'body', '
 }
 
 function load_field_edit($type, $id, $lang = null) {
-  include 'config.php';
+  global $dbh;
   $type_array = array();
   $sql = "SELECT * FROM fields WHERE type='$type' and id_type='$id'";
   if ($sovpad)
@@ -327,7 +510,7 @@ function load_field_edit($type, $id, $lang = null) {
 }
 
 function save_field($type, $id, $type_array) {
-  include 'config.php';
+  global $dbh;
   foreach ($type_array as $value) {
     if (isset($value['id'])) {
       $sth = $dbh->prepare('UPDATE fields SET lang=?,text=? WHERE id=?');
@@ -353,15 +536,24 @@ function save_field_prepare($type, $type_id, $lang, $field, $text, $id = false) 
   save_field($type, $type_id, $type_array);
 }
 
-function save_article($post) {
+function article_save($post) {
   $article = isset($_SESSION['article']) ? $_SESSION['article'] : '';
   unset($_SESSION['article']);
-  include_once 'config.php';
+  global $dbh;
   if ($article) {
     $id = (integer) $article['id'];
+    if ($_FILES['fupload']['name']) {
+      include ("avatar.php");
+      $filename = time();
+      $avatar = create_avatar($filename);
+      $sth = $dbh->prepare('UPDATE article SET photo=? WHERE id=?');
+      $sth->execute(array($avatar, $id));
+    }
     foreach ($article['fields'] as $lang => $value) {
-      if (empty($post['title_' . $lang]) || empty($post['lang_' . $lang]) || empty($post['body' . $lang])) {
-        
+      if (empty($post['title_' . $lang]) || empty($post['lang_' . $lang]) || empty($post['body_' . $lang])) {
+        $sql = "DELETE FROM fields WHERE type='article' and id_type = '$id' and lang='$lang'";
+        $count = $dbh->exec($sql);
+        continue;
       }
       foreach ($value as $name_field => $value1) {
         if ($post[$name_field . '_' . $lang] != $value1['text']) {
@@ -411,7 +603,7 @@ function save_article($post) {
 }
 
 function load_article_view($id, $lang) {
-  include 'config.php';
+  global $dbh;
   $sql = "SELECT * FROM article WHERE id=$id";
   $article = $dbh->query($sql)->fetch();
   if (empty($article))
@@ -424,6 +616,7 @@ function load_article_view($id, $lang) {
     'created' => $article['created'],
     'lkup' => $article['lkup'],
     'lkdown' => $article['lkdown'],
+    'photo' => $article['photo'],
     'fields' => $fields,
   );
   return $article_full;
@@ -434,58 +627,68 @@ function article_view($id, $lang, $teaser = false) {
   if (empty($article))
     return false;
   $output = '';
-  $rat = article_rating($id);
+
   if ($teaser) {
+    $rat = article_rating($id, 'rating-teaser');
+    $img = $article['photo'] ? "<img src='img/avatars/{$article['photo']}' />" : '<img src="img/avatars/nofoto.jpg" />';
+
     $created = date('d.m.Y', $article['created']);
-    $output .= "<div class='block-teaser'><h1><a href='index.php?id=$id'>{$article['fields']['title']}</a></h1>"
+    $output .= "<div class='block-teaser-width'><div class='block-teaser'><div class='avatar-teaser'>" . $img . "</div>"
+        . "<h5><a href='index.php?id=$id'>{$article['fields']['title']}</a></h5>"
         . "<div class='autor'>{$article['autor']}</div>"
-        . "<div class='date'>$created</div>".$rat
+        . "<div class='date'>$created</div><br/>" . $rat
         . "<div class='contetnt-text'>{$article['fields']['teaser']}</div>"
-        . "<div class='like'>" . t('good') . '-' . $article['lkup'] . ', ' . t('bad') . '-' . $article['lkdown'] . "</div>"
+        //    . "<div class='like'>" . t('good') . '-' . $article['lkup'] . ', ' . t('bad') . '-' . $article['lkdown'] . "</div>"
         . "<div class='more'><a href='index.php?id=$id'>" . t('Read More') . "</a></div>"
-        . "</div><hr/>";
+        . "</div></div>";
   }
   else {
+    $img = $article['photo'] ? "<a href='img/original/{$article['photo']}'><img src='img/original/{$article['photo']} ' width='200' /></a>" :
+        '<img src="img/avatars/nofoto.jpg" />';
+    $rat = article_rating($id, 'rating-sum');
     $created = date('d.m.Y', $article['created']);
     $output .="<h1>{$article['fields']['title']}</h1>"
+        . "<div class='avatar-views'>" . $img . "</div>"
         . "<div class='autor'>{$article['autor']}</div>"
-        . "<div class='date'>$created</div>"
+        . "<div class='date'>$created</div><br/>" . $rat
         . "<div class='contetnt-text'>{$article['fields']['body']}</div>"
         . "<div class='like'><form name='like' action='like.php' method='post'>"
         . "<input type='hidden' name='id' value='" . $id . "'/>"
         . '<input value="' . t('good') . '" name="good" type="submit" /> ' . $article['lkup'] . ', '
-        . '<input value="' . t('bad') . '" name="bad" type="submit" />' . '-' . $article['lkdown'] . "</form></div>".$rat;
-    if (isset($_SESSION['user'])) //prava
-      print("<a href='index.php?edit=$id'>edit</a><br/>"
-          . "<a href='delete.php?id=$id&type=article'>delete</a>");
+        . '<input value="' . t('bad') . '" name="bad" type="submit" />' . '-' . $article['lkdown'] . "</form></div>";
+    if (user_access(1)) //prava
+      $output .="<div id='edit'><a href='index.php?edit=$id'>edit</a></div>";
+    if (user_access(3))
+      $output .= "<div id='delete'><a href='delete.php?id=$id&type=article'>delete</a></div>";
+    if (isset($_SESSION['user']))
+      $output .= article_like_views_rat($id);
   }
   return $output;
 }
 
 function article_edit($op, $id = null) {
-  $access = gen_access_form();
-  $_SESSION['access_form'] = $access;
   if ($op == 'create') {
     echo '<h1>' . t('Create content') . '</h1>';
   }
   else {
     echo '<h1>' . t('Edit content') . '</h1>';
   }
-  echo '<form name="article" action="article.php" method="post">';
-  echo '<input type="hidden" name="access" value="' . $access . '"/>';
+  echo '<form name="article" action="article.php" method="post"  enctype="multipart/form-data">';
+  echo gen_access_form_add_input();
+  echo '<input type="hidden" name="type" value="article-edit"/>';
   echo '<input type="hidden" name="id" value="' . $id . '"/>';
   switch ($op) {
     case 'edit':case 'add_lang':
       if (is_numeric($id)) {
-        include 'config.php';
+        global $dbh;
         $sql = "SELECT * FROM article WHERE id=$id";
         $article = $dbh->query($sql)->fetch();
         $fields = load_field_edit('article', $id);
         $_SESSION['article'] = array('id' => $id, 'fields' => $fields, 'user' => $article['user'], 'created' => $article['created']);
         foreach ($fields as $key => $value) {
           echo '<div class="lang-article">';
-          echo t('Title') . '<input name="title_' . $key . '" type="text"  value="' . $value['title']['text'] . '"/><br/>';
-          echo t('Lang') . '<input name="lang_' . $key . '" type="text"  value="' . $key . '"/><br/>';
+          echo t('Title') . '<input name="title_' . $key . '" type="text" value="' . $value['title']['text'] . '"/><br/>';
+          echo t('Lang') . '<input name="lang_' . $key . '" type="text" value="' . $key . '"/><br/>';
           echo t('Body') . '<textarea name="body_' . $key . '" rows="8">' . $value['body']['text'] . '</textarea><hr/></div>';
         }
       }
@@ -500,8 +703,30 @@ function article_edit($op, $id = null) {
     default:
       break;
   }
+  $img = empty($article['photo']) ? 'nofoto.jpg' : $article['photo'];
+  echo '<div class="avatar"><img id="ava" src="img/avatars/' . $img . '" width="130" height="110" />
+       <p align="center"><label for="avatar_label" id="photo">' . t('add photo') . '</label></p>
+       <input name="fupload" id="fupload" class="fld" type="file"></div>';
   echo '<input value="' . t('Add lang') . '" name="add_lang" type="submit" />';
   echo '<input value="' . t('Save') . '" name="save" type="submit" /></form>';
+  echo '<script>
+    function SketchFileSelect(evt) {
+      var files = evt.target.files;
+      f = files[0];
+      if (f.type.match(\'image.*\')) {
+        var reader = new FileReader();
+        reader.onload = (function (theFile) {
+          return function (e) {
+            document.getElementById(\'ava\').src = e.target.result;
+            document.getElementById(\'photo\').innerHTML = ' . t('edit photo') . '\';
+            return false;
+          };
+        })(f);
+        reader.readAsDataURL(f);
+      }
+    }
+    document.getElementById(\'fupload\').addEventListener(\'change\', SketchFileSelect, false);
+   </script>';
 }
 
 function text_short($text, $max) {
@@ -524,9 +749,9 @@ function text_short($text, $max) {
 }
 
 function comments_load($aid) {
-  $output = '<h2>' . t('Comments') . '</h2>';
+  $output = '<div id="comments"><h3>' . t('Comments') . '</h3>';
   if (is_numeric($aid)) {
-    include 'config.php';
+    global $dbh;
     $lang = tt();
     $perm_comments = user_access(6);
     $sql = "SELECT * FROM comments WHERE id_article='$aid' and lang='$lang'";
@@ -535,17 +760,17 @@ function comments_load($aid) {
     }
   }
   if (isset($_SESSION['user']))
-    $output .= '<a href="index.php?comment=create&aid=' . $aid . '">' . t('Add comment') . '</a>';
+    $output .= '<a href="index.php?comment=create&aid=' . $aid . '">' . t('Add comment') . '</a></div>';
   return $output;
 }
 
 function comment_render($row, $permission = false) {
   $row['theme'] = empty($row['theme']) ? text_short($row['body'], 15) : $row['theme'];
-  $created = date('d.m.Y', $row['created']);
+  $created = date('d.m.Y G:i', $row['created']);
   $edit = $permission ? "<div class='link'>" . l(t('Edit'), array('comment' => $row['cid'], 'op' => 'edit', 'aid' => $row['id_article'])) . "</div>" : '';
-  $output = "<div class='comment'><h3>{$row['theme']}</h3>"
-      . "<div class='autor'>{$row['user']}</div>"
+  $output = '<div class="comment-header"><h4>' . $row['theme'] . '</h4>'
       . "<div class='date'>$created</div>"
+      . "<div class='autor'><strong>" . $row['user'] . '</strong> ' . t('says') . "</div>"
       . "<div class='comment-text'>{$row['body']}</div>"
       . $edit . "</div><hr/>";
   return $output;
@@ -574,7 +799,7 @@ function comment_form($aid, $id = null) {
 
   $lang = tt();
   //print_r($);
-  $theme = isset($com['theme']) ? '  value="' . $com['theme'] . '"' : '';
+  $theme = isset($com['theme']) ? ' value="' . $com['theme'] . '"' : '';
   $body = isset($com['body']) ? $com['body'] : '';
   $id = $id ? '<input type="hidden" name="id" value="' . $id . '"/>' : '';
   $output = '<form name="comment" action="comment.php" method="post">'
@@ -635,23 +860,65 @@ function comment_save($post) {
 }
 
 function user_permission() {
-  
+  $access = gen_access_form();
+  $_SESSION['access_form'] = $access;
+  global $dbh;
+  $sql = "SELECT * FROM permissions";
+  $perm_name = $dbh->query($sql)->fetchAll();
+  $p_name = array();
+  foreach ($perm_name as $value)
+    $p_name[$value['pid']] = $value['permission'];
+  $sql = "SELECT * FROM roles";
+  $roles = $dbh->query($sql)->fetchAll();
+  $r_name = array();
+  foreach ($roles as $value)
+    $r_name[$value['rid']] = $value['roles'];
+  $sql = "SELECT * FROM roles_perm";
+  $roles_perm = $dbh->query($sql)->fetchAll();
+  $r_p = array();
+  foreach ($roles_perm as $value)
+    $r_p[$value['rid']][$value['pid']] = 1;
+  $output = '<form name="perm" action="perm.php" method="post">'
+      . '<input type="hidden" name="access" value="' . $access . '"/>'
+      . '<table id="perms"><tr><th>\</th>';
+  foreach ($r_name as $value)
+    $output .='<th>' . t($value) . '</th>';
+  $output .= '</tr>';
+  $r_p1 = array();
+  foreach ($p_name as $key => $value) {
+    $output .= '<tr><th>' . t($value) . '</th>';
+    foreach ($r_name as $key1 => $value1) {
+      $ch = isset($r_p[$key1][$key]) ? ' checked' : '';
+      $output .='<td><input type="checkbox"' . $ch . ' name="perms[' . $key . '_' . $key1 . ']"/></td>';
+    }
+    $output .= '</tr>';
+  }
+  $output .= '</table><input value="' . t('Save') . '" name="save" type="submit" /></form></div>';
+  return $output;
 }
 
 function user_permission_save($post) {
-  
+  global $dbh;
+  $sql = "DELETE FROM roles_perm";
+  $count = $dbh->exec($sql);
+  foreach ($post['perms'] as $key => $value) {
+    $var = explode('_', $key);
+    $sth = $dbh->prepare('INSERT roles_perm SET rid=?,pid=?');
+    $sth->execute(array($var[1], $var[0]));
+  }
 }
 
-function article_rating($aid) {
-    global $dbh;
-    $sql = "SELECT vot_users, vot_sum FROM article WHERE id='$aid'";
-    $rating = $dbh->query($sql)->fetch(); 
-    if (empty($rating['vot_users'])){
-      $output = '<div class="rating">'. t('No rating'). '</div>';
-    }else{
-      $output = '<div class="rating">'. t('voice').' '.$rating['vot_users']. ', ' . t('avegete'). ' '.round($rating['vot_sum']/$rating['vot_users'],1). '</div>';
-    }
-    return $output;
+function article_rating($aid, $class = 'rating') {
+  global $dbh;
+  $sql = "SELECT vot_users, vot_sum FROM article WHERE id='$aid'";
+  $rating = $dbh->query($sql)->fetch();
+  if (empty($rating['vot_users'])) {
+    $output = '<div class="' . $class . '">' . t('No rating') . '</div>';
+  }
+  else {
+    $output = '<div class="' . $class . '">' . t('voice') . ' ' . $rating['vot_users'] . ', ' . t('avegete') . ' ' . round($rating['vot_sum'] / $rating['vot_users'], 1) . '</div>';
+  }
+  return $output;
 }
 
 function article_like_views_rat($aid) {
@@ -662,8 +929,7 @@ function article_like_views_rat($aid) {
   $sql = "SELECT rating FROM ratings_articles WHERE aid='$aid' and uid='$uid'";
   $rating = $dbh->query($sql)->fetchColumn();
   if ($rating) {
-    $output = t('Your grade of article - ') . $rating
-        . "<div class='rating'><form name='rating' action='like.php' method='post'>"
+    $output = "<div class='rating'>" . t('Your grade of article - ') . $rating . "<form name='rating' action='like.php' method='post'>"
         . "<input type='hidden' name='aid' value='" . $aid . "'/>"
         . '<input value="' . t('Delete rating') . '" name="delete" type="submit" /></form></div>';
     return $output;
@@ -701,7 +967,7 @@ function article_add_rating($post) {
 
 function article_delete_rating($post) {
   $aid = var_user('id', $_POST['aid']);
-  if ($aid) { 
+  if ($aid) {
     $uid = $_SESSION['user']['uid'];
     global $dbh;
     $sql = "SELECT rating FROM ratings_articles WHERE aid='$aid' and uid='$uid'";
@@ -747,4 +1013,85 @@ function article_add_like($id, $op) {
       $_SESSION['like'][] = $id;
     }
   }
+}
+
+function static_page_edit($op, $id = null) {
+  echo '<h1>' . t('Edit static page') . '</h1>';
+  echo '<form name="static-page" action="article.php" method="post">';
+  echo '<input type="hidden" name="type" value="static-page-edit"/>';
+  echo gen_access_form_add_input();
+  echo '<input type="hidden" name="id" value="' . $id . '"/>';
+  switch ($op) {
+    case 'edit':case 'add_lang':
+      if (is_numeric($id)) {
+        global $dbh;
+        $fields = load_field_edit('static', $id);
+        $_SESSION['static'] = array('id' => $id, 'fields' => $fields);
+        foreach ($fields as $key => $value) {
+          echo '<div class="lang-static">';
+          echo t('Lang') . '<input name="lang_' . $key . '" type="text" value="' . $key . '"/><br/>';
+          echo '<strong>' . t('Body') . '</strong><br><textarea name="body_' . $key . '" rows="8">' . $value['body']['text'] . '</textarea><hr/></div>';
+        }
+      }
+      if ($op == 'edit' && $fields)
+        break;
+      echo '<div class="add-lang">';
+      echo t('Lang') . '<input name="lang_new" type="text" /><br/>';
+      echo '<strong>' . t('Body') . '</strong><br><textarea name="body_new" rows="8"></textarea></div>';
+      break;
+    default:
+      break;
+  }
+  echo '<input value="' . t('Add lang') . '" name="add_lang" type="submit" />';
+  echo '<input value="' . t('Save') . '" name="save" type="submit" /></form>';
+}
+
+function static_page_view($id, $lang) {
+  $fields = load_field_view('static', $id, $lang);
+  $output = $fields['body'];
+  return $output;
+}
+
+function static_page_save($post) {
+  $article = isset($_SESSION['static']) ? $_SESSION['static'] : '';
+  unset($_SESSION['static']);
+  global $dbh;
+  $id = (integer) $article['id'];
+  foreach ($article['fields'] as $lang => $value) {
+    if (empty($post['lang_' . $lang]) || empty($post['body_' . $lang])) {
+      $sql = "DELETE FROM fields WHERE type='static' and id_type = '$id' and lang='$lang'";
+      $count = $dbh->exec($sql);
+      continue;
+    }
+    foreach ($value as $name_field => $value1) {
+      if ($post[$name_field . '_' . $lang] != $value1['text']) {
+        $name = $post[$name_field . '_' . $lang];
+        save_field_prepare('static', $id, $lang, $name_field, $name, $value1['id']);
+      }
+    }
+  }
+  if (isset($post['lang_new']) && isset($post['body_new'])) {
+    $lang = var_user('lang', $post['lang_new'], true);
+    $body = $post['body_new'];
+    if ($lang && $body) {
+      save_field_prepare('static', $id, $lang, 'body', $body);
+    }
+  }
+  return $id;
+}
+
+function static_page_list_link($id, $text) {
+  $output = '<a href=index.php?st=' . $id . '>' . $text . '</a>'
+      . '(<a href=index.php?st=' . $id . '&op=edit>' . t('Edit') . '</a>)';
+//   . '(<a href=index.php?st='.$id.'&op=delete>'.t('Delete').'</a>';
+  return $output;
+}
+
+function static_page_list() {
+  $output = static_page_list_link(1, t('Aphorism')) . '<br/>'
+      . static_page_list_link(2, t('About')) . '<br/>'
+      . static_page_list_link(3, t('Contact')) . '<br/>'
+      . '';
+
+  return $output;
 }

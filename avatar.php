@@ -5,12 +5,12 @@ function create_avatar($new_filename, $files = '') {
     $files = $_FILES['fupload'];
   $path_dir = 'img/avatars/';
   $filename = $files['name'];
-  if (preg_match('/[.](JPG)|(jpg)|(JPEG)|(jpeg)|(GIF)|(gif)|(PNG)|(png)$/', $filename, $out)) {
+  if (preg_match('/[\.](JPG)|(jpg)|(JPEG)|(jpeg)|(GIF)|(gif)|(PNG)|(png)$/', $filename, $out)) {
     $source = $files['tmp_name'];
     $size = getimagesize($source);
     if ($size[0] < 50 || $size[1] < 50)
       return false;
-    $target = 'img/original/' . $new_filename . '.' . $out[2];
+    $target = 'img/original/' . $new_filename .'.'. $out[2];
     move_uploaded_file($source, $target);
     if (in_array($out[2], array('JPG', 'jpg', 'jpeg', 'JPEG'))) {
       $im = imagecreatefromjpeg($target);
